@@ -112,10 +112,17 @@ async function searchTweets(query: string) {
     const searchUrl = `https://x.com/search?q=${encodeURIComponent(query.trim())}&src=typed_query&f=top`;
     console.log(`Navegando para: ${searchUrl}`);
     
-    await page.goto(searchUrl, { 
-      waitUntil: "domcontentloaded", 
-      timeout: 20000 
-    });
+    try {
+      await page.goto(searchUrl, { 
+        waitUntil: "domcontentloaded", 
+        timeout: 20000 
+      });
+    } catch {
+      console.log("Tentando navegação mais simples...");
+      await page.goto(searchUrl, { 
+        timeout: 15000 
+      });
+    }
 
     // Aguardar um pouco para garantir que a página carregou
     await page.waitForTimeout(3000);
@@ -311,6 +318,7 @@ async function searchTweets(query: string) {
 async function handleTweetAction(action: string, tweetId: string) {
   console.log(`Iniciando ação: ${action} no tweet: ${tweetId}`);
   
+  // Implementar ações específicas em tweets (like, retweet)
   if (!action || !tweetId) {
     return NextResponse.json(
       { error: "Ação e ID do tweet são obrigatórios" },
@@ -361,129 +369,123 @@ async function handleTweetAction(action: string, tweetId: string) {
   try {
     await context.addCookies(cookies);
 
-    // Estratégia 1: Tentar acessar o tweet diretamente
-    const tweetUrl = `https://x.com/i/web/status/${tweetId}`;
-    console.log(`Navegando para tweet: ${tweetUrl}`);
-    
-    await page.goto(tweetUrl, { 
-      waitUntil: "domcontentloaded", 
-      timeout: 15000 
-    });
+    // Estratégia 1: Tentar múltiplas URLs do tweet
+    const possibleUrls = [
+      `https://x.com/i/web/status/${tweetId}`,
+      `https://twitter.com/i/web/status/${tweetId}`,
+      `https://x.com/status/${tweetId}`,
+      `https://twitter.com/status/${tweetId}`
+    ];
 
-    await page.waitForTimeout(3000);
-
-    // Verificar se o tweet carregou corretamente
     let tweetFound = false;
-    let targetTweetSelector = '';
-
-    // Primeiro, verificar se estamos na página individual do tweet
-    const directTweetExists = await page.locator('[data-testid="tweet"]').first().isVisible().catch(() => false);
     
-    if (directTweetExists) {
-      console.log("Tweet encontrado na página individual");
-      // Na página individual, usar o primeiro tweet (que é o tweet principal)
-      targetTweetSelector = '[data-testid="tweet"]';
-      tweetFound = true;
-    } else {
-      console.log("Tweet não encontrado diretamente, tentando estratégia alternativa...");
+    for (const tweetUrl of possibleUrls) {
+      console.log(`Tentando URL: ${tweetUrl}`);
       
-      // Estratégia 2: Buscar na timeline do usuário
-      // Extrair username do tweetId se possível, ou usar busca genérica
-      await page.goto('https://x.com/search?q=' + encodeURIComponent(tweetId) + '&src=typed_query', { timeout: 10000 });
+      try {
+        await page.goto(tweetUrl, { 
+          waitUntil: "domcontentloaded", 
+          timeout: 10000 
+        });
+
+        await page.waitForTimeout(2000);
+
+        // Verificar se o tweet carregou
+        const tweetExists = await page.locator('[data-testid="tweet"]').isVisible();
+        
+        if (tweetExists) {
+          console.log(`Tweet encontrado em: ${tweetUrl}`);
+          tweetFound = true;
+          break;
+        }
+      } catch (error) {
+        console.log(`Falha ao carregar ${tweetUrl}:`, error);
+        continue;
+      }
+    }
+
+    // Estratégia 2: Buscar o tweet via busca do Twitter
+    if (!tweetFound) {
+      console.log("Tentando encontrar tweet via busca...");
+      
+      await page.goto('https://x.com/home', { timeout: 10000 });
+      await page.waitForTimeout(2000);
+      
+      // Fazer uma busca pelo ID do tweet
+      const searchUrl = `https://x.com/search?q=${tweetId}&src=typed_query`;
+      await page.goto(searchUrl, { timeout: 10000 });
       await page.waitForTimeout(3000);
       
-      // Procurar o tweet específico nos resultados da busca
-      const searchTweetExists = await page.locator(`[href*="/status/${tweetId}"]`).first().isVisible().catch(() => false);
-      
-      if (searchTweetExists) {
-        console.log("Tweet encontrado nos resultados da busca");
-        targetTweetSelector = `[data-testid="tweet"]:has([href*="/status/${tweetId}"])`;
-        tweetFound = true;
-      } else {
-        // Estratégia 3: Tentar na timeline principal
-        console.log("Tentando encontrar tweet na timeline principal...");
-        await page.goto('https://x.com/home', { timeout: 10000 });
+      // Procurar pelo tweet nos resultados
+      const tweetInResults = page.locator(`[href*="/status/${tweetId}"]`).first();
+      if (await tweetInResults.isVisible()) {
+        await tweetInResults.click();
         await page.waitForTimeout(2000);
-        
-        // Fazer scroll para tentar encontrar o tweet
-        for (let i = 0; i < 5; i++) {
-          const foundTweet = await page.locator(`[href*="/status/${tweetId}"]`).first().isVisible().catch(() => false);
-          if (foundTweet) {
-            console.log(`Tweet encontrado na timeline após ${i + 1} tentativas de scroll`);
-            targetTweetSelector = `[data-testid="tweet"]:has([href*="/status/${tweetId}"])`;
-            tweetFound = true;
-            break;
-          }
-          await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-          await page.waitForTimeout(1000);
-        }
+        tweetFound = true;
+        console.log("Tweet encontrado via busca");
       }
     }
 
     if (!tweetFound) {
-      await browser.close();
-      return NextResponse.json(
-        { error: "Tweet não encontrado ou não acessível" },
-        { status: 404 }
-      );
+      throw new Error(`Tweet com ID ${tweetId} não foi encontrado em nenhuma das estratégias`);
     }
 
-    // Executar a ação no tweet específico
+    // Executar a ação
+    let actionSuccess = false;
+    
     if (action === 'like') {
-      console.log(`Procurando botão de like no tweet: ${targetTweetSelector}`);
-      
-      // Procurar o botão de like dentro do tweet específico
-      const likeButton = page.locator(`${targetTweetSelector} [data-testid="like"]`).first();
-      
-      // Verificar se o botão existe e está visível
-      const likeButtonExists = await likeButton.isVisible({ timeout: 5000 }).catch(() => false);
-      
-      if (!likeButtonExists) {
-        // Fallback: tentar encontrar o botão de like de forma mais genérica
-        const genericLikeButton = page.locator('[data-testid="like"]').first();
-        await genericLikeButton.waitFor({ state: 'visible', timeout: 10000 });
-        await genericLikeButton.click();
-      } else {
+      try {
+        const likeButton = page.locator('[data-testid="like"]').first();
+        await likeButton.waitFor({ state: 'visible', timeout: 5000 });
         await likeButton.click();
-      }
-      
-      await page.waitForTimeout(1000);
-      console.log('Like executado com sucesso');
-      
-    } else if (action === 'retweet') {
-      console.log(`Procurando botão de retweet no tweet: ${targetTweetSelector}`);
-      
-      // Procurar o botão de retweet dentro do tweet específico
-      const retweetButton = page.locator(`${targetTweetSelector} [data-testid="retweet"]`).first();
-      
-      // Verificar se o botão existe e está visível
-      const retweetButtonExists = await retweetButton.isVisible({ timeout: 5000 }).catch(() => false);
-      
-      if (!retweetButtonExists) {
-        // Fallback: tentar encontrar o botão de retweet de forma mais genérica
-        const genericRetweetButton = page.locator('[data-testid="retweet"]').first();
-        await genericRetweetButton.waitFor({ state: 'visible', timeout: 10000 });
-        await genericRetweetButton.click();
-      } else {
-        await retweetButton.click();
-      }
-      
-      await page.waitForTimeout(1000);
-      
-      // Confirmar retweet se necessário
-      const confirmButton = page.locator('[data-testid="retweetConfirm"]');
-      const confirmExists = await confirmButton.isVisible({ timeout: 3000 }).catch(() => false);
-      
-      if (confirmExists) {
-        await confirmButton.click();
         await page.waitForTimeout(1000);
-        console.log('Retweet confirmado');
+        actionSuccess = true;
+        console.log('Like executado com sucesso');
+      } catch (error) {
+        console.log('Erro ao executar like:', error);
+        throw new Error("Não foi possível encontrar ou clicar no botão de like");
       }
-      
-      console.log('Retweet executado com sucesso');
+    } else if (action === 'retweet') {
+      try {
+        const retweetButton = page.locator('[data-testid="retweet"]').first();
+        await retweetButton.waitFor({ state: 'visible', timeout: 5000 });
+        await retweetButton.click();
+        await page.waitForTimeout(1000);
+        
+        // Procurar e clicar no botão de confirmar retweet
+        const confirmButton = page.locator('[data-testid="retweetConfirm"]');
+        if (await confirmButton.isVisible()) {
+          await confirmButton.click();
+          await page.waitForTimeout(1000);
+        }
+        actionSuccess = true;
+        console.log('Retweet executado com sucesso');
+      } catch (error) {
+        console.log('Erro ao executar retweet:', error);
+        throw new Error("Não foi possível encontrar ou clicar no botão de retweet");
+      }
     }
 
     await browser.close();
+
+    if (actionSuccess) {
+      return NextResponse.json(
+        { message: `${action === 'like' ? 'Like' : 'Retweet'} realizado com sucesso!` },
+        { status: 200 }
+      );
+    } else {
+      throw new Error("Ação não foi executada");
+    }
+
+  } catch (error) {
+    await browser.close();
+    console.error(`Erro ao executar ${action}:`, error);
+    return NextResponse.json(
+      { error: `Erro ao executar ${action}: ${error instanceof Error ? error.message : "Erro desconhecido"}` },
+      { status: 500 }
+    );
+  }
+}
 
     return NextResponse.json(
       { message: `${action === 'like' ? 'Like' : 'Retweet'} realizado com sucesso!` },
@@ -493,18 +495,52 @@ async function handleTweetAction(action: string, tweetId: string) {
   } catch (error) {
     await browser.close();
     console.error(`Erro ao executar ${action}:`, error);
-    
-    // Verificar se é o erro específico do strict mode
-    if (error instanceof Error && error.message.includes('strict mode violation')) {
-      return NextResponse.json(
-        { error: `Erro: Múltiplos elementos encontrados. Tente novamente ou escolha outro tweet.` },
-        { status: 400 }
-      );
-    }
-    
     return NextResponse.json(
       { error: `Erro ao executar ${action}: ${error instanceof Error ? error.message : "Erro desconhecido"}` },
       { status: 500 }
     );
   }
 }
+
+/*
+INSTRUÇÕES PARA CONFIGURAR twitter-cookies.json:
+
+1. Faça login no Twitter no seu navegador
+2. Abra as ferramentas de desenvolvedor (F12)
+3. Vá para a aba "Application" ou "Storage"
+4. Clique em "Cookies" e selecione "https://twitter.com"
+5. Copie todos os cookies importantes (especialmente auth_token, ct0, twid)
+6. Crie um arquivo twitter-cookies.json na raiz do projeto com este formato:
+
+[
+  {
+    "name": "auth_token",
+    "value": "SEU_AUTH_TOKEN_AQUI",
+    "domain": ".twitter.com",
+    "path": "/",
+    "secure": true,
+    "httpOnly": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "ct0",
+    "value": "SEU_CT0_AQUI",
+    "domain": ".twitter.com",
+    "path": "/",
+    "secure": true,
+    "httpOnly": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "twid",
+    "value": "SEU_TWID_AQUI",
+    "domain": ".twitter.com",
+    "path": "/",
+    "secure": true,
+    "httpOnly": false,
+    "sameSite": "Lax"
+  }
+]
+
+IMPORTANTE: Adicione twitter-cookies.json ao .gitignore para não versioná-lo!
+*/
