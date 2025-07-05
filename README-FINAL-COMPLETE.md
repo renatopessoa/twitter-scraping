@@ -7,25 +7,29 @@ Esta aplicação **Next.js 15** com **TypeScript** e **Playwright** automatiza a
 ## ✨ Funcionalidades Implementadas
 
 ### 🔍 Busca de Tweets
+
 - **Busca por termo**: Pesquisa tweets por palavra-chave
-- **Ordenação flexível**: 
+- **Ordenação flexível**:
   - 📅 **Mais recentes**: Tweets em ordem cronológica (`&f=live`)
   - 🔥 **Mais engajamento**: Tweets ordenados por total de interações (`&f=top`)
 - **Resultados detalhados**: Mostra autor, conteúdo, engajamento e timestamps
 
 ### 💝 Ações Individuais
+
 - **Like**: Curtir tweets com quantidade personalizável
 - **Retweet**: Retweetar tweets com quantidade personalizável
 - **Feedback visual**: Estados de loading e confirmações
 - **Tratamento de erros**: Mensagens claras para falhas
 
 ### 🚀 Ações em Lote
+
 - **Configuração por tweet**: Definir quantidades específicas de likes/retweets
 - **Envio em lote**: Executar todas as ações configuradas de uma vez
 - **Relatório detalhado**: Resumo de sucessos e falhas
 - **Processamento sequencial**: Evita sobrecarga do Twitter
 
 ### 🔧 Recursos Técnicos
+
 - **Autenticação por cookies**: Sistema robusto de autenticação
 - **Navegação headless**: Playwright em modo invisível
 - **Seletores inteligentes**: Resistente a mudanças no DOM
@@ -71,6 +75,7 @@ npm run build
 2. **Abrir DevTools** (F12)
 3. **Ir para Application/Storage** → Cookies → https://twitter.com
 4. **Copiar cookies importantes**:
+
    - `auth_token` (essencial)
    - `ct0` (CSRF token)
    - `twid` (Twitter ID)
@@ -135,6 +140,7 @@ cat test-report.json
 ### POST /api/twitter-action
 
 #### Buscar Tweets
+
 ```javascript
 {
   "query": "Next.js",
@@ -143,6 +149,7 @@ cat test-report.json
 ```
 
 #### Ação Individual
+
 ```javascript
 {
   "action": "like" | "retweet",
@@ -152,6 +159,7 @@ cat test-report.json
 ```
 
 #### Ações em Lote
+
 ```javascript
 {
   "batchActions": [
@@ -190,6 +198,7 @@ cat test-report.json
 ### Problemas Comuns
 
 #### 1. "Cookies não encontrados"
+
 ```bash
 # Verificar se arquivo existe
 ls -la twitter-cookies.json
@@ -199,16 +208,19 @@ cat twitter-cookies.json | jq .
 ```
 
 #### 2. "Falha na autenticação"
+
 - Renovar cookies do navegador
 - Verificar se ainda está logado no Twitter
 - Checar se cookies não expiraram
 
 #### 3. "Elemento não encontrado"
+
 - Twitter pode ter mudado a interface
 - Verificar se seletores ainda funcionam
 - Usar versão backup da API se disponível
 
 #### 4. "Muitas requisições"
+
 - Reduzir frequência de ações
 - Aumentar delays entre requisições
 - Usar ações em lote com menos tweets
@@ -257,6 +269,7 @@ node test-simple.js
 ## 🚀 Melhorias Futuras
 
 ### Planejadas
+
 - [ ] Interface mais rica com Material-UI
 - [ ] Agendamento de ações
 - [ ] Múltiplas contas
@@ -264,6 +277,7 @@ node test-simple.js
 - [ ] Exportação de dados
 
 ### Considerações
+
 - [ ] Suporte a outros navegadores
 - [ ] Modo de desenvolvimento vs produção
 - [ ] Containerização com Docker
@@ -281,6 +295,7 @@ node test-simple.js
 ### Contato
 
 Para dúvidas ou problemas:
+
 1. Verificar logs da aplicação
 2. Executar testes automatizados
 3. Consultar troubleshooting
@@ -305,6 +320,6 @@ O projeto está **pronto para produção** e oferece uma base sólida para autom
 
 ---
 
-*Documentação atualizada em: Janeiro 2024*
-*Versão: 1.0.0*
-*Status: ✅ Completo*
+_Documentação atualizada em: Janeiro 2024_
+_Versão: 1.0.0_
+_Status: ✅ Completo_

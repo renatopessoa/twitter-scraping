@@ -1,0 +1,29 @@
+{
+  "timestamp": "2025-07-05T17:35:07.807Z",
+  "system": "multi-account",
+  "accounts_configured": 3,
+  "total_tests": 2,
+  "passed_tests": 0,
+  "failed_tests": 2,
+  "success_rate": "0.0",
+  "results": {
+    "search": [
+      {
+        "query": "JavaScript",
+        "sortBy": "recent",
+        "desc": "Busca JavaScript (recentes)",
+        "status": "error",
+        "error": "Erro durante a busca: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('article[data-testid=\"tweet\"]') to be visible\u001b[22m\n"
+      },
+      {
+        "query": "React",
+        "sortBy": "top",
+        "desc": "Busca React (engajamento)",
+        "status": "error",
+        "error": "Erro durante a busca: page.waitForSelector: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('article[data-testid=\"tweet\"]') to be visible\u001b[22m\n"
+      }
+    ],
+    "actions": [],
+    "batch": []
+  }
+}

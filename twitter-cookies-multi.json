@@ -1,0 +1,103 @@
+{
+  "accounts": [
+    {
+      "name": "Conta Principal",
+      "username": "usuario1",
+      "cookies": [
+        {
+          "name": "auth_token",
+          "value": "144c64a02c1b83362c26fc8a58a42dfd11f3170a",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "ct0",
+          "value": "52030ea06ca88a37ee679d3d5f274292b3f1a5fcd8085006270303d3455a8717c2b54c582ec164808b2ac86a6d9bc86572fad5dcf5dc4e7884b3b0c42d100e39bf17f170009abf5f4ab0bc29b0f0375b",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": false,
+          "sameSite": "Lax"
+        },
+        {
+          "name": "twid",
+          "value": "3D158114703",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": false,
+          "sameSite": "Lax"
+        }
+      ]
+    },
+    {
+      "name": "Conta Secundária",
+      "username": "usuario2",
+      "cookies": [
+        {
+          "name": "auth_token",
+          "value": "SEU_AUTH_TOKEN_CONTA_2_AQUI",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "ct0",
+          "value": "SEU_CT0_CONTA_2_AQUI",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": false,
+          "sameSite": "Lax"
+        },
+        {
+          "name": "twid",
+          "value": "SEU_TWID_CONTA_2_AQUI",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": false,
+          "sameSite": "Lax"
+        }
+      ]
+    },
+    {
+      "name": "Conta Terceira",
+      "username": "usuario3",
+      "cookies": [
+        {
+          "name": "auth_token",
+          "value": "SEU_AUTH_TOKEN_CONTA_3_AQUI",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "ct0",
+          "value": "SEU_CT0_CONTA_3_AQUI",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": false,
+          "sameSite": "Lax"
+        },
+        {
+          "name": "twid",
+          "value": "SEU_TWID_CONTA_3_AQUI",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": false,
+          "sameSite": "Lax"
+        }
+      ]
+    }
+  ]
+}

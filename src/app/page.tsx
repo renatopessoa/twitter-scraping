@@ -30,6 +30,7 @@ export default function Home() {
   const [customLikes, setCustomLikes] = useState<{ [key: string]: number }>({});
   const [customRetweets, setCustomRetweets] = useState<{ [key: string]: number }>({});
   const [showCustomInputs, setShowCustomInputs] = useState<{ [key: string]: boolean }>({});
+  const [accountsInfo, setAccountsInfo] = useState<{ total: number; available: string[] }>({ total: 0, available: [] });
 
   const clearResults = () => {
     setTweets([]);
@@ -64,6 +65,14 @@ export default function Home() {
         setStatus(data.message || "Busca concluída!");
         setTweets(data.tweets || []);
         setSearchQuery(data.query || query.trim());
+
+        // Atualizar informações das contas
+        if (data.accounts_available) {
+          setAccountsInfo({
+            total: data.accounts_available,
+            available: data.search_account ? [data.search_account] : []
+          });
+        }
       } else {
         setStatus(`Erro: ${data.error || "Algo deu errado"}`);
       }
@@ -79,8 +88,8 @@ export default function Home() {
     setLoadingActions(prev => ({ ...prev, [actionKey]: true }));
 
     // Obter quantidade personalizada se definida
-    const customAmount = action === 'like' 
-      ? customLikes[tweetId] || 1 
+    const customAmount = action === 'like'
+      ? customLikes[tweetId] || 1
       : customRetweets[tweetId] || 1;
 
     try {
@@ -89,10 +98,10 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ 
-          action, 
-          tweetId, 
-          amount: customAmount 
+        body: JSON.stringify({
+          action,
+          tweetId,
+          amount: customAmount
         }),
       });
 
@@ -130,11 +139,11 @@ export default function Home() {
   const handleBatchActions = async () => {
     // Coletar todas as ações configuradas
     const batchActions = [];
-    
+
     for (const tweet of tweets) {
       const likesAmount = customLikes[tweet.id];
       const retweetsAmount = customRetweets[tweet.id];
-      
+
       if (likesAmount && likesAmount > 0) {
         batchActions.push({
           tweetId: tweet.id,
@@ -142,7 +151,7 @@ export default function Home() {
           amount: likesAmount
         });
       }
-      
+
       if (retweetsAmount && retweetsAmount > 0) {
         batchActions.push({
           tweetId: tweet.id,
@@ -151,15 +160,15 @@ export default function Home() {
         });
       }
     }
-    
+
     if (batchActions.length === 0) {
       setStatus("Nenhuma ação configurada. Configure quantidades nos tweets antes de enviar.");
       return;
     }
-    
+
     setLoadingActions(prev => ({ ...prev, 'batch': true }));
     setStatus(`Executando ${batchActions.length} ações em lote...`);
-    
+
     try {
       const response = await fetch("/api/twitter-action", {
         method: "POST",
@@ -168,16 +177,16 @@ export default function Home() {
         },
         body: JSON.stringify({ batchActions }),
       });
-      
+
       const data = await response.json();
-      
+
       if (response.ok) {
         setStatus(`${data.message} - ${data.summary.success}/${data.summary.total} sucessos`);
-        
+
         // Atualizar estado local dos tweets baseado nos resultados
         setTweets(prevTweets => {
           const newTweets = [...prevTweets];
-          
+
           for (const result of data.results) {
             if (result.success) {
               const tweetIndex = newTweets.findIndex(t => t.id === result.tweetId);
@@ -196,15 +205,15 @@ export default function Home() {
               }
             }
           }
-          
+
           return newTweets;
         });
-        
+
         // Limpar configurações após sucesso
         setCustomLikes({});
         setCustomRetweets({});
         setShowCustomInputs({});
-        
+
       } else {
         setStatus(`Erro: ${data.error}`);
       }
@@ -308,13 +317,37 @@ export default function Home() {
             <div className="mt-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
               <h3 className="text-sm font-medium text-gray-300 mb-2">Status:</h3>
               <p className={`text-sm font-mono ${status.startsWith("Erro")
-                  ? "text-red-400"
-                  : status.includes("sucesso") || status.includes("concluída")
-                    ? "text-green-400"
-                    : "text-yellow-400"
+                ? "text-red-400"
+                : status.includes("sucesso") || status.includes("concluída")
+                  ? "text-green-400"
+                  : "text-gray-300"
                 }`}>
                 {status}
               </p>
+            </div>
+
+            {/* Accounts Info Display */}
+            {accountsInfo.total > 0 && (
+              <div className="mt-4 p-4 bg-green-900/20 border border-green-500/30 rounded-lg">
+                <h3 className="text-sm font-medium text-green-400 mb-2">🔧 Sistema Multi-Conta Ativo:</h3>
+                <div className="text-sm text-green-300">
+                  <p>📱 <strong>{accountsInfo.total}</strong> contas disponíveis</p>
+                  <p>🔄 Ações serão distribuídas entre as contas</p>
+                  <p>🎯 Engajamento mais natural e orgânico</p>
+                </div>
+              </div>
+            )}
+
+            {/* Instructions */}
+            <div className="mt-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+              <h3 className="text-sm font-medium text-blue-400 mb-2">💡 Como usar:</h3>
+              <ul className="text-sm text-blue-300 space-y-1">
+                <li>• Digite um termo de busca</li>
+                <li>• Escolha a ordenação (recentes ou engajamento)</li>
+                <li>• Configure quantidades de likes/retweets</li>
+                <li>• Use &quot;Enviar Todas as Ações&quot; para processar em lote</li>
+                <li>• Ações serão executadas por contas diferentes</li>
+              </ul>
             </div>
           </div>
 
@@ -401,8 +434,8 @@ export default function Home() {
                           onClick={() => handleTweetAction('like', tweet.id, index)}
                           disabled={loadingActions[`like-${index}`]}
                           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${tweet.isLiked
-                              ? "bg-red-600 hover:bg-red-700 text-white"
-                              : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                            ? "bg-red-600 hover:bg-red-700 text-white"
+                            : "bg-gray-700 hover:bg-gray-600 text-gray-300"
                             }`}
                         >
                           <span>{tweet.isLiked ? "💖" : "🤍"}</span>
@@ -420,8 +453,8 @@ export default function Home() {
                           onClick={() => handleTweetAction('retweet', tweet.id, index)}
                           disabled={loadingActions[`retweet-${index}`]}
                           className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${tweet.isRetweeted
-                              ? "bg-green-600 hover:bg-green-700 text-white"
-                              : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                            ? "bg-green-600 hover:bg-green-700 text-white"
+                            : "bg-gray-700 hover:bg-gray-600 text-gray-300"
                             }`}
                         >
                           <span>🔄</span>
@@ -454,9 +487,9 @@ export default function Home() {
                               min="1"
                               max="100"
                               value={customLikes[tweet.id] || 1}
-                              onChange={(e) => setCustomLikes(prev => ({ 
-                                ...prev, 
-                                [tweet.id]: Math.max(1, parseInt(e.target.value) || 1) 
+                              onChange={(e) => setCustomLikes(prev => ({
+                                ...prev,
+                                [tweet.id]: Math.max(1, parseInt(e.target.value) || 1)
                               }))}
                               className="w-20 px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
                             />
@@ -468,9 +501,9 @@ export default function Home() {
                               min="1"
                               max="100"
                               value={customRetweets[tweet.id] || 1}
-                              onChange={(e) => setCustomRetweets(prev => ({ 
-                                ...prev, 
-                                [tweet.id]: Math.max(1, parseInt(e.target.value) || 1) 
+                              onChange={(e) => setCustomRetweets(prev => ({
+                                ...prev,
+                                [tweet.id]: Math.max(1, parseInt(e.target.value) || 1)
                               }))}
                               className="w-20 px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
                             />
@@ -514,22 +547,6 @@ export default function Home() {
               </p>
             </div>
           )}
-
-          {/* Instructions */}
-          <div className="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h2 className="text-lg font-semibold text-gray-200 mb-3">
-              Como funciona:
-            </h2>
-            <ul className="text-sm text-gray-300 space-y-2">
-              <li>• Digite um termo de busca (palavra-chave, hashtag, etc.)</li>
-              <li>• Escolha se quer ver tweets mais recentes ou com mais engajamento</li>
-              <li>• Use o botão &quot;Config&quot; para definir quantos likes/retweets adicionar</li>
-              <li>• Clique em &quot;Enviar Todas as Ações&quot; para executar todas as configurações</li>
-              <li>• Ou clique individualmente em &quot;Curtir&quot; ou &quot;Retweet&quot;</li>
-              <li>• Os 10 melhores tweets serão exibidos conforme sua escolha</li>
-              <li>• Certifique-se de que o arquivo <code className="bg-gray-700 px-1 rounded">twitter-cookies.json</code> está configurado</li>
-            </ul>
-          </div>
         </div>
       </div>
     </div>

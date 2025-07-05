@@ -8,7 +8,8 @@ Uma aplicação Next.js 15 com TypeScript que automatiza ações no Twitter usan
 - **Linguagem**: TypeScript
 - **Estilização**: Tailwind CSS (tema escuro)
 - **Automação**: Playwright
-- **Funcionalidade**: Automatiza curtidas no primeiro tweet de uma busca
+- **🔥 NOVO**: Sistema Multi-Conta para engajamento orgânico
+- **Funcionalidades**: Busca tweets, curtidas/retweets configuráveis, ações em lote
 
 ## 🚀 Instalação
 
@@ -26,7 +27,75 @@ Uma aplicação Next.js 15 com TypeScript que automatiza ações no Twitter usan
 
 ## ⚙️ Configuração dos Cookies
 
-Para que a automação funcione, você precisa configurar os cookies de autenticação do Twitter:
+### 🔥 NOVO: Sistema Multi-Conta
+
+Para máximo engajamento orgânico, configure múltiplas contas do Twitter:
+
+#### Formato Multi-Conta (Recomendado)
+
+Crie `twitter-cookies-multi.json`:
+
+```json
+{
+  "accounts": [
+    {
+      "name": "Conta Principal",
+      "username": "usuario1",
+      "cookies": [
+        {
+          "name": "auth_token",
+          "value": "SEU_AUTH_TOKEN_CONTA_1",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "ct0",
+          "value": "SEU_CT0_CONTA_1",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": false,
+          "sameSite": "Lax"
+        },
+        {
+          "name": "twid",
+          "value": "SEU_TWID_CONTA_1",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": false,
+          "sameSite": "Lax"
+        }
+      ]
+    },
+    {
+      "name": "Conta Secundária",
+      "username": "usuario2",
+      "cookies": [
+        {
+          "name": "auth_token",
+          "value": "SEU_AUTH_TOKEN_CONTA_2",
+          "domain": ".twitter.com",
+          "path": "/",
+          "secure": true,
+          "httpOnly": true,
+          "sameSite": "None"
+        }
+        // ... outros cookies da conta 2
+      ]
+    }
+  ]
+}
+```
+
+**📋 Instruções detalhadas**: Veja `MULTI-CONTA-SETUP.md`
+
+#### Formato Antigo (Ainda Suportado)
+
+Para usar uma única conta:
 
 ### 1. Obter os Cookies
 
@@ -88,11 +157,29 @@ A aplicação estará disponível em [http://localhost:3000](http://localhost:30
 
 ## 📱 Como Usar
 
+### 🔥 Sistema Multi-Conta Ativo
+
+Quando configurado com múltiplas contas, a aplicação:
+
+- 🎯 **Distribui ações** entre diferentes contas automaticamente
+- 🔄 **Rotaciona contas** para simular engajamento orgânico
+- 📊 **Mostra feedback** de qual conta executou cada ação
+- 🚀 **Escala infinitamente** com quantas contas quiser
+
+### Interface Principal
+
 1. Acesse a aplicação web
 2. Digite um termo de busca (palavra-chave, hashtag, etc.)
-3. Clique em "Curtir Primeiro Tweet"
-4. Aguarde o processamento
-5. Verifique o status da operação
+3. Escolha ordenação (recentes ou engajamento)
+4. Configure quantidades de likes/retweets por tweet
+5. Use "Enviar Todas as Ações" para processar em lote
+6. Veja qual conta executou cada ação
+
+### Indicadores na Interface
+
+- **🔧 Sistema Multi-Conta Ativo**: Mostra quantas contas estão disponíveis
+- **🎯 Conta executou ação**: Feedback específico por ação
+- **📊 Relatório de lote**: Distribuição entre contas
 
 ## 🏗️ Arquitetura
 
@@ -112,10 +199,12 @@ src/
 ## 🔧 Funcionalidades Técnicas
 
 - **Frontend**: Interface React com tema escuro
-- **Backend**: API Route do Next.js
+- **Backend**: API Route do Next.js com sistema multi-conta
 - **Automação**: Playwright em modo headless
-- **Autenticação**: Cookies salvos localmente
+- **Autenticação**: Sistema multi-conta com rotação automática
+- **Distribuição**: Ações distribuídas inteligentemente entre contas
 - **Tratamento de Erros**: Robusto e informativo
+- **Escalabilidade**: Suporte a quantas contas quiser
 
 ## 📋 Scripts Disponíveis
 
@@ -123,6 +212,8 @@ src/
 - `npm run build` - Cria build de produção
 - `npm run start` - Executa build de produção
 - `npm run lint` - Executa linting do código
+- `npm run test` - Executa testes da aplicação
+- `npm run test:multi` - Testa sistema multi-conta
 
 ## ⚠️ Avisos Importantes
 
