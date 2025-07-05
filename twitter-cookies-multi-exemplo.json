@@ -1,0 +1,42 @@
+{
+  "accounts": [
+    {
+      "name": "Conta de Teste",
+      "username": "usuario_teste",
+      "cookies": [
+        {
+          "name": "auth_token",
+          "value": "exemplo_auth_token_aqui",
+          "domain": ".twitter.com",
+          "path": "/",
+          "expires": 1767225600,
+          "httpOnly": true,
+          "secure": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "ct0",
+          "value": "exemplo_ct0_token_aqui",
+          "domain": ".twitter.com",
+          "path": "/",
+          "expires": 1767225600,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        },
+        {
+          "name": "twid",
+          "value": "u%3D123456789",
+          "domain": ".twitter.com",
+          "path": "/",
+          "expires": 1767225600,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "None"
+        }
+      ]
+    }
+  ],
+  "created_at": "2025-07-05T21:12:00.000Z",
+  "note": "Cookies de exemplo - substitua pelos cookies reais extraídos do seu navegador"
+}

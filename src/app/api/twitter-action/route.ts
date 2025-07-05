@@ -298,9 +298,24 @@ async function searchTweets(query: string, sortBy: "recent" | "top" = "recent") 
     );
   }
 
-  // Usar a primeira conta disponível para busca
+  // Carregar configuração e encontrar conta válida
   const config = await loadMultiAccountConfig();
-  const searchAccount = config.accounts[0];
+  
+  console.log(`🔍 Procurando conta válida para busca...`);
+  const validAccount = await findValidAccount(config);
+  
+  if (!validAccount) {
+    console.log('❌ Nenhuma conta válida encontrada');
+    
+    return NextResponse.json({
+      error: "Nenhuma conta válida encontrada",
+      details: "Todas as contas têm cookies expirados ou inválidos",
+      suggested_action: "Use o detector de sessões para obter cookies válidos",
+      available_accounts: config.accounts.map(acc => acc.name)
+    }, { status: 401 });
+  }
+
+  console.log(`✅ Usando conta válida: ${validAccount.name}`);
 
   // Inicializar o navegador
   const browser = await chromium.launch({
@@ -323,7 +338,7 @@ async function searchTweets(query: string, sortBy: "recent" | "top" = "recent") 
       viewport: { width: 1920, height: 1080 }
     });
     
-    await context.addCookies(searchAccount.cookies);
+    await context.addCookies(validAccount.cookies);
     
     const page = await context.newPage();
 
@@ -337,6 +352,19 @@ async function searchTweets(query: string, sortBy: "recent" | "top" = "recent") 
 
     await page.goto(searchUrl, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(5000);
+
+    // Verificar se não foi redirecionado para login
+    const searchPageUrl = page.url();
+    if (searchPageUrl.includes('/login') || searchPageUrl.includes('/i/flow/login')) {
+      console.log('❌ Redirecionado para login na busca');
+      
+      return NextResponse.json({
+        error: "Redirecionado para login durante a busca",
+        details: "A sessão pode ter expirado durante a navegação",
+        suggested_action: "Atualize os cookies e tente novamente",
+        currentUrl: searchPageUrl
+      }, { status: 401 });
+    }
 
     // Aguardar os tweets carregarem - usar múltiplos seletores como fallback
     console.log('🔍 Aguardando tweets carregarem...');
@@ -421,7 +449,7 @@ async function searchTweets(query: string, sortBy: "recent" | "top" = "recent") 
         sortBy,
         total: 0,
         accounts_available: config.accounts.length,
-        search_account: searchAccount.name,
+        search_account: validAccount.name,
         debug: {
           url: currentUrl,
           error: errorMessage,
@@ -607,7 +635,7 @@ async function searchTweets(query: string, sortBy: "recent" | "top" = "recent") 
       sortBy,
       total: tweets.length,
       accounts_available: config.accounts.length,
-      search_account: searchAccount.name,
+      search_account: validAccount.name,
       debug: {
         selector_used: usedSelector,
         total_found: tweets.length
@@ -623,4 +651,86 @@ async function searchTweets(query: string, sortBy: "recent" | "top" = "recent") 
   } finally {
     await browser.close();
   }
+}
+
+// Função para validar se uma sessão está ativa
+async function validateSession(account: TwitterAccount): Promise<boolean> {
+  console.log(`🔍 Validando sessão para: ${account.name}`);
+  
+  const browser = await chromium.launch({
+    headless: true,
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-accelerated-2d-canvas",
+      "--no-first-run",
+      "--no-zygote",
+      "--single-process",
+      "--disable-gpu"
+    ]
+  });
+
+  try {
+    const context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 }
+    });
+    
+    await context.addCookies(account.cookies);
+    const page = await context.newPage();
+
+    await page.goto('https://x.com/home', { waitUntil: 'domcontentloaded', timeout: 30000 });
+    await page.waitForTimeout(3000);
+
+    // Verificar se foi redirecionado para login
+    const currentUrl = page.url();
+    if (currentUrl.includes('/login') || currentUrl.includes('/i/flow/login')) {
+      console.log(`❌ Sessão inválida para ${account.name} - redirecionado para login`);
+      return false;
+    }
+
+    // Verificar indicadores de login
+    const loginIndicators = [
+      '[data-testid="SideNav_AccountSwitcher_Button"]',
+      '[data-testid="AppTabBar_Profile_Link"]',
+      '[aria-label="Profile"]',
+      '[data-testid="primaryColumn"]'
+    ];
+
+    for (const indicator of loginIndicators) {
+      try {
+        if (await page.locator(indicator).isVisible({ timeout: 2000 })) {
+          console.log(`✅ Sessão válida para ${account.name}`);
+          return true;
+        }
+      } catch {
+        continue;
+      }
+    }
+
+    console.log(`❌ Sessão inválida para ${account.name} - indicadores não encontrados`);
+    return false;
+
+  } catch (error) {
+    console.log(`❌ Erro ao validar sessão para ${account.name}:`, error);
+    return false;
+  } finally {
+    await browser.close();
+  }
+}
+
+// Função para encontrar conta válida
+async function findValidAccount(config: MultiAccountConfig): Promise<TwitterAccount | null> {
+  console.log(`🔍 Procurando conta válida entre ${config.accounts.length} disponíveis...`);
+  
+  for (const account of config.accounts) {
+    if (await validateSession(account)) {
+      console.log(`✅ Conta válida encontrada: ${account.name}`);
+      return account;
+    }
+  }
+  
+  console.log(`❌ Nenhuma conta válida encontrada`);
+  return null;
 }

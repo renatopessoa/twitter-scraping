@@ -5,8 +5,8 @@
  * usando Playwright para simular login e extrair cookies automaticamente.
  */
 
-const { chromium } = require('playwright');
-const fs = require('fs');
+import { chromium } from 'playwright';
+import fs from 'fs';
 
 // Configurações
 const CONFIG = {
@@ -380,11 +380,11 @@ async function main() {
 }
 
 // Executar se chamado diretamente
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main();
 }
 
-module.exports = {
+export {
   extractMultiAccountCookies,
   extractTwitterCookies,
   isLoggedIn,

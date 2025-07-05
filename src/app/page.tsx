@@ -42,6 +42,19 @@ export default function Home() {
     lastDetection: null,
     detectionResults: []
   });
+  const [sessionStatus, setSessionStatus] = useState<{
+    isValidating: boolean;
+    isValid: boolean | null;
+    message: string;
+    username: string | null;
+    needsNewSession: boolean;
+  }>({
+    isValidating: false,
+    isValid: null,
+    message: "",
+    username: null,
+    needsNewSession: false
+  });
 
   const clearResults = () => {
     setTweets([]);
@@ -341,6 +354,46 @@ export default function Home() {
     }
   };
 
+  const validateSession = async () => {
+    setSessionStatus({ ...sessionStatus, isValidating: true });
+
+    try {
+      const response = await fetch('/api/session-detector', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'quick-validate' })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSessionStatus({
+          isValidating: false,
+          isValid: true,
+          message: data.message,
+          username: data.username,
+          needsNewSession: false
+        });
+      } else {
+        setSessionStatus({
+          isValidating: false,
+          isValid: false,
+          message: data.message,
+          username: null,
+          needsNewSession: data.needsNewSession || false
+        });
+      }
+    } catch (error) {
+      setSessionStatus({
+        isValidating: false,
+        isValid: false,
+        message: "Erro ao validar sessão",
+        username: null,
+        needsNewSession: true
+      });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="container mx-auto px-4 py-16">
@@ -488,6 +541,50 @@ export default function Home() {
                             </div>
                           </div>
                         ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Session Validation Panel */}
+            <div className="mt-4 p-4 bg-yellow-900/20 border border-yellow-500/30 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-yellow-400">🔐 Validação de Sessão</h3>
+                <button
+                  onClick={validateSession}
+                  disabled={sessionStatus.isValidating}
+                  className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                >
+                  {sessionStatus.isValidating ? "Validando..." : "🔍 Validar Sessão"}
+                </button>
+              </div>
+
+              {sessionStatus.isValid !== null && (
+                <div className={`p-3 rounded-lg ${sessionStatus.isValid ? 'bg-green-900/30 border border-green-500/50' : 'bg-red-900/30 border border-red-500/50'}`}>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <span className={`text-sm font-medium ${sessionStatus.isValid ? 'text-green-400' : 'text-red-400'}`}>
+                      {sessionStatus.isValid ? '✅ Sessão Válida' : '❌ Sessão Inválida'}
+                    </span>
+                    {sessionStatus.username && (
+                      <span className="text-sm text-gray-300">
+                        • @{sessionStatus.username}
+                      </span>
+                    )}
+                  </div>
+                  <p className={`text-sm ${sessionStatus.isValid ? 'text-green-300' : 'text-red-300'}`}>
+                    {sessionStatus.message}
+                  </p>
+
+                  {sessionStatus.needsNewSession && (
+                    <div className="mt-3 p-3 bg-gray-700 rounded-lg">
+                      <p className="text-sm font-medium text-orange-400 mb-2">💡 Instruções para resolver:</p>
+                      <div className="text-sm text-gray-300 space-y-1">
+                        <p>1. Abra o terminal no diretório do projeto</p>
+                        <p>2. Execute: <code className="bg-gray-800 px-2 py-1 rounded text-yellow-400">node extract-cookies-manual.js</code></p>
+                        <p>3. Faça login no Twitter quando o navegador abrir</p>
+                        <p>4. Volte aqui e clique em &quot;Validar Sessão&quot; novamente</p>
                       </div>
                     </div>
                   )}

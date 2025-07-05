@@ -43,7 +43,6 @@ interface DetectorConfig {
   };
 }
 
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -55,10 +54,6 @@ export async function POST(request: NextRequest) {
 
     if (action === "validate-sessions") {
       return await handleSessionValidation();
-    }
-
-    if (action === "quick-validate") {
-      return await handleQuickValidation();
     }
 
     return NextResponse.json(
@@ -248,7 +243,7 @@ class TwitterSessionDetector {
     console.log("📊 Escaneando contexto persistente...");
     
     if (!this.browser) {
-      throw new Error("Browser não foi iniciado");
+      throw new Error("Browser não inicializado");
     }
     
     const context = await this.browser.newContext({
@@ -304,7 +299,7 @@ class TwitterSessionDetector {
 
     for (const url of testUrls) {
       if (!this.browser) {
-        throw new Error("Browser não foi iniciado");
+        throw new Error("Browser não inicializado");
       }
       
       const context = await this.browser.newContext(this.config.scanProfile);
@@ -339,7 +334,7 @@ class TwitterSessionDetector {
     console.log("🍪 Escaneando cookies de domínio...");
     
     if (!this.browser) {
-      throw new Error("Browser não foi iniciado");
+      throw new Error("Browser não inicializado");
     }
     
     const context = await this.browser.newContext(this.config.scanProfile);
@@ -520,7 +515,7 @@ class TwitterSessionDetector {
 
   async validateSession(session: DetectedSession): Promise<boolean> {
     if (!this.browser) {
-      throw new Error("Browser não foi iniciado");
+      throw new Error("Browser não inicializado");
     }
     
     const context = await this.browser.newContext(this.config.scanProfile);
@@ -541,133 +536,5 @@ class TwitterSessionDetector {
     } finally {
       await context.close();
     }
-  }
-}
-
-async function handleQuickValidation(): Promise<NextResponse> {
-  console.log("🔍 Validação rápida de cookies...");
-  
-  const cookieFiles = [
-    join(process.cwd(), "twitter-cookies.json"),
-    join(process.cwd(), "twitter-cookies-multi.json")
-  ];
-  
-  let cookiesToTest = [];
-  let fileName = "";
-  
-  // Encontrar cookies para testar
-  for (const file of cookieFiles) {
-    if (existsSync(file)) {
-      try {
-        const content = JSON.parse(readFileSync(file, "utf-8"));
-        
-        if (Array.isArray(content)) {
-          cookiesToTest = content;
-          fileName = file;
-          break;
-        } else if (content.accounts && Array.isArray(content.accounts)) {
-          cookiesToTest = content.accounts[0]?.cookies || [];
-          fileName = file;
-          break;
-        }
-      } catch (error) {
-        console.error(`Erro ao ler ${file}:`, error);
-      }
-    }
-  }
-  
-  if (cookiesToTest.length === 0) {
-    return NextResponse.json({
-      success: false,
-      message: "Nenhum cookie encontrado para validar",
-      needsNewSession: true,
-      instructions: [
-        "1. Faça login manual no Twitter",
-        "2. Execute o extrator de cookies",
-        "3. Tente novamente"
-      ]
-    });
-  }
-  
-  // Testar cookies rapidamente
-  const browser = await chromium.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
-  
-  try {
-    const context = await browser.newContext();
-    await context.addCookies(cookiesToTest);
-    
-    const page = await context.newPage();
-    await page.goto('https://twitter.com/home', { timeout: 30000 });
-    await page.waitForTimeout(3000);
-    
-    // Verificar se está logado
-    const loginIndicators = [
-      '[data-testid="SideNav_AccountSwitcher_Button"]',
-      '[data-testid="AppTabBar_Profile_Link"]',
-      '[data-testid="primaryColumn"]',
-      '[data-testid="tweet"]'
-    ];
-    
-    let isLoggedIn = false;
-    
-    for (const selector of loginIndicators) {
-      try {
-        if (await page.locator(selector).isVisible({ timeout: 3000 })) {
-          isLoggedIn = true;
-          break;
-        }
-      } catch {
-        // Continuar tentando
-      }
-    }
-    
-    if (isLoggedIn) {
-      // Tentar extrair username
-      let username = "usuario_desconhecido";
-      try {
-        const usernameElement = await page.locator('[data-testid="UserName"]').first();
-        if (await usernameElement.isVisible({ timeout: 5000 })) {
-          const usernameText = await usernameElement.textContent();
-          if (usernameText) {
-            username = usernameText.replace('@', '');
-          }
-        }
-      } catch {
-        // Não foi possível extrair username
-      }
-      
-      return NextResponse.json({
-        success: true,
-        message: "Sessão ativa detectada com sucesso!",
-        username: username,
-        cookiesValid: true,
-        source: fileName
-      });
-    } else {
-      return NextResponse.json({
-        success: false,
-        message: "Cookies expirados ou inválidos",
-        cookiesValid: false,
-        needsNewSession: true,
-        instructions: [
-          "1. Faça login manual no Twitter",
-          "2. Execute: node extract-cookies-manual.js",
-          "3. Tente novamente"
-        ]
-      });
-    }
-    
-  } catch (error) {
-    console.error("Erro na validação rápida:", error);
-    return NextResponse.json({
-      success: false,
-      message: `Erro na validação: ${error instanceof Error ? error.message : "Erro desconhecido"}`,
-      needsNewSession: true
-    });
-  } finally {
-    await browser.close();
   }
 }

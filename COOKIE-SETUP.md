@@ -48,7 +48,7 @@ Substitua o conteúdo do arquivo `twitter-cookies.json` pelo seguinte formato:
 [
   {
     "name": "auth_token",
-    "value": "SEU_VALOR_AQUI",
+    "value": "144c64a02c1b83362c26fc8a58a42dfd11f3170a",
     "domain": ".x.com",
     "path": "/",
     "secure": true,
@@ -57,7 +57,7 @@ Substitua o conteúdo do arquivo `twitter-cookies.json` pelo seguinte formato:
   },
   {
     "name": "ct0",
-    "value": "SEU_VALOR_AQUI",
+    "value": "SEU_VALOR_52030ea06ca88a37ee679d3d5f274292b3f1a5fcd8085006270303d3455a8717c2b54c582ec164808b2ac86a6d9bc86572fad5dcf5dc4e7884b3b0c42d100e39bf17f170009abf5f4ab0bc29b0f0375bAQUI",
     "domain": ".x.com",
     "path": "/",
     "secure": true,
@@ -66,7 +66,7 @@ Substitua o conteúdo do arquivo `twitter-cookies.json` pelo seguinte formato:
   },
   {
     "name": "twid",
-    "value": "SEU_VALOR_AQUI",
+    "value": "u%3D158114703",
     "domain": ".x.com",
     "path": "/",
     "secure": true,

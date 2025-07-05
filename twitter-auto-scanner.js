@@ -8,8 +8,8 @@
  * - Padrões de comportamento
  */
 
-const { chromium } = require('playwright');
-const fs = require('fs');
+import { chromium } from 'playwright';
+import fs from 'fs';
 
 // Configurações avançadas
 const SCAN_CONFIG = {
@@ -439,8 +439,8 @@ async function main() {
 }
 
 // Executar se chamado diretamente
-if (require.main === module) {
+if (process.argv[1] === new URL(import.meta.url).pathname) {
   main();
 }
 
-module.exports = TwitterAutoScanner;
+export default TwitterAutoScanner;

@@ -5,8 +5,8 @@
  * e extrai cookies válidos sem necessidade de intervenção manual.
  */
 
-const { chromium } = require('playwright');
-const fs = require('fs');
+import { chromium } from 'playwright';
+import fs from 'fs';
 
 class TwitterSessionDetector {
   constructor() {
@@ -620,8 +620,8 @@ async function main() {
 }
 
 // Executar se chamado diretamente
-if (require.main === module) {
+if (process.argv[1] === new URL(import.meta.url).pathname) {
   main();
 }
 
-module.exports = TwitterSessionDetector;
+export default TwitterSessionDetector;

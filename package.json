@@ -2,6 +2,7 @@
   "name": "twitter-scraping",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,7 +13,10 @@
     "test:multi": "node test-multi-account.js",
     "test:auto": "node test-varredura-automatica.js",
     "test:timeout": "node test-correcao-timeout.js",
+    "test:validation": "node test-validacao-sessoes.js",
     "setup:cookies": "echo 'Configure twitter-cookies-multi.json seguindo o MULTI-CONTA-SETUP.md'",
+    "check:cookies": "node verificar-cookies.js",
+    "check:cookies:example": "node verificar-cookies.js --example",
     "detect:auto": "node twitter-session-detector.js",
     "detect:visual": "node twitter-session-detector.js --visible",
     "detect:scan": "node twitter-auto-scanner.js",

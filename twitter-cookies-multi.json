@@ -1,103 +1,201 @@
 {
   "accounts": [
     {
-      "name": "Conta Principal",
-      "username": "usuario1",
+      "name": "Usuário",
+      "username": "usuario_desconhecido",
+      "extractedAt": "2025-07-05T21:51:44.754Z",
       "cookies": [
         {
-          "name": "auth_token",
-          "value": "144c64a02c1b83362c26fc8a58a42dfd11f3170a",
+          "name": "guest_id_marketing",
+          "value": "v1%3A175175225542122889",
           "domain": ".twitter.com",
           "path": "/",
+          "expires": 1786312255.338191,
+          "httpOnly": false,
           "secure": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "guest_id_ads",
+          "value": "v1%3A175175225542122889",
+          "domain": ".twitter.com",
+          "path": "/",
+          "expires": 1786312255.338254,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "personalization_id",
+          "value": "\"v1_/OxC+VfKsnfpZ0zEyDNH1A==\"",
+          "domain": ".twitter.com",
+          "path": "/",
+          "expires": 1786312255.338266,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "guest_id",
+          "value": "v1%3A175175225542122889",
+          "domain": ".twitter.com",
+          "path": "/",
+          "expires": 1786312255.338273,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "__cf_bm",
+          "value": "U6G3a73tQBY07Bl0G5u7Ed8aywVCMAg234aMjJFgC3U-1751752255-1.0.1.1-GnFdyX7xMy3sSiSbyCiAx1QWvZONwlQeUiQ.RPzrWunog7_ops6XRLcWb7Tdpr6MWGTyjCuXpF1jzb5IkTpdZC.k8eyQb_4tXiJW4PWnOik",
+          "domain": ".twitter.com",
+          "path": "/",
+          "expires": 1751754055.338283,
           "httpOnly": true,
+          "secure": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "guest_id_marketing",
+          "value": "v1%3A175175225575173530",
+          "domain": ".x.com",
+          "path": "/",
+          "expires": 1786312301.699731,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "guest_id_ads",
+          "value": "v1%3A175175225575173530",
+          "domain": ".x.com",
+          "path": "/",
+          "expires": 1786312301.699677,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "guest_id",
+          "value": "v1%3A175175225575173530",
+          "domain": ".x.com",
+          "path": "/",
+          "expires": 1786312255.676573,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "personalization_id",
+          "value": "\"v1_aDMr///yLqrI3vauyA+oQQ==\"",
+          "domain": ".x.com",
+          "path": "/",
+          "expires": 1786312255.715406,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "None"
+        },
+        {
+          "name": "gt",
+          "value": "1941615803867992117",
+          "domain": ".x.com",
+          "path": "/",
+          "expires": 1751761255.715476,
+          "httpOnly": false,
+          "secure": true,
+          "sameSite": "Lax"
+        },
+        {
+          "name": "kdt",
+          "value": "gTzhYPLcOwOQFUgS4gGxf8KF8EqPwfRsXp4fv5YB",
+          "domain": ".x.com",
+          "path": "/",
+          "expires": 1786312273.523351,
+          "httpOnly": true,
+          "secure": true,
+          "sameSite": "Lax"
+        },
+        {
+          "name": "auth_token",
+          "value": "a997bf434584a5a4b5f6a1397f395c1cf0ea1b5f",
+          "domain": ".x.com",
+          "path": "/",
+          "expires": 1786312273.523432,
+          "httpOnly": true,
+          "secure": true,
           "sameSite": "None"
         },
         {
           "name": "ct0",
-          "value": "52030ea06ca88a37ee679d3d5f274292b3f1a5fcd8085006270303d3455a8717c2b54c582ec164808b2ac86a6d9bc86572fad5dcf5dc4e7884b3b0c42d100e39bf17f170009abf5f4ab0bc29b0f0375b",
-          "domain": ".twitter.com",
+          "value": "58c39db353de16537fd03f4aa4eee1071e1c8471b1528e15697cc642aac1336b0916507bd40595b934f83666667a608735082a0f12daba829512a21326ada8754636db80ddf40a4ef80cbe8893325ed2",
+          "domain": ".x.com",
           "path": "/",
-          "secure": true,
+          "expires": 1786312273.939805,
           "httpOnly": false,
+          "secure": true,
           "sameSite": "Lax"
         },
         {
-          "name": "twid",
-          "value": "3D158114703",
-          "domain": ".twitter.com",
+          "name": "att",
+          "value": "1-8qzg6RPZk34G4mKghZ0YYm72TVxeNK0l5DeJg2K5",
+          "domain": ".x.com",
           "path": "/",
-          "secure": true,
-          "httpOnly": false,
-          "sameSite": "Lax"
-        }
-      ]
-    },
-    {
-      "name": "Conta Secundária",
-      "username": "usuario2",
-      "cookies": [
-        {
-          "name": "auth_token",
-          "value": "SEU_AUTH_TOKEN_CONTA_2_AQUI",
-          "domain": ".twitter.com",
-          "path": "/",
-          "secure": true,
+          "expires": 1751838674.200629,
           "httpOnly": true,
+          "secure": true,
           "sameSite": "None"
         },
         {
-          "name": "ct0",
-          "value": "SEU_CT0_CONTA_2_AQUI",
-          "domain": ".twitter.com",
+          "name": "lang",
+          "value": "pt",
+          "domain": "x.com",
           "path": "/",
-          "secure": true,
+          "expires": -1,
           "httpOnly": false,
+          "secure": false,
           "sameSite": "Lax"
         },
         {
           "name": "twid",
-          "value": "SEU_TWID_CONTA_2_AQUI",
-          "domain": ".twitter.com",
+          "value": "u%3D158114703",
+          "domain": ".x.com",
           "path": "/",
-          "secure": true,
+          "expires": 1783288301.699745,
           "httpOnly": false,
-          "sameSite": "Lax"
-        }
-      ]
-    },
-    {
-      "name": "Conta Terceira",
-      "username": "usuario3",
-      "cookies": [
-        {
-          "name": "auth_token",
-          "value": "SEU_AUTH_TOKEN_CONTA_3_AQUI",
-          "domain": ".twitter.com",
-          "path": "/",
           "secure": true,
-          "httpOnly": true,
           "sameSite": "None"
         },
         {
-          "name": "ct0",
-          "value": "SEU_CT0_CONTA_3_AQUI",
-          "domain": ".twitter.com",
+          "name": "IDE",
+          "value": "AHWqTUn8Exy81-WtUKl7HqGgv7OF6zKr8H-g9mFYOCYmkkdnjehB4ro6V1Wlemm26SE",
+          "domain": ".doubleclick.net",
           "path": "/",
+          "expires": 1786312276.130487,
+          "httpOnly": true,
           "secure": true,
-          "httpOnly": false,
-          "sameSite": "Lax"
+          "sameSite": "None"
         },
         {
-          "name": "twid",
-          "value": "SEU_TWID_CONTA_3_AQUI",
-          "domain": ".twitter.com",
+          "name": "__cf_bm",
+          "value": "7_yur_y6FGT0HtEFIQXEBSuQFQNzp_DuSaPvk4ZxsmM-1751752304-1.0.1.1-eCJql93IUzJ4VNRtd126sUfhMuOODfFqEEnXZTJGeLxISehEKME3JAs9RLxRI3qWrdk8j4hbB1cm.zijTciCPliNe8M_K8aVTgnRNy89Naw",
+          "domain": ".x.com",
           "path": "/",
+          "expires": 1751754103.934007,
+          "httpOnly": true,
           "secure": true,
-          "httpOnly": false,
-          "sameSite": "Lax"
+          "sameSite": "None"
         }
-      ]
+      ],
+      "extractedManually": true,
+      "metrics": {
+        "followers": 0,
+        "following": 0,
+        "verified": false
+      }
     }
-  ]
+  ],
+  "detectedAutomatically": false,
+  "extractedManually": true,
+  "lastExtraction": "2025-07-05T21:51:44.767Z",
+  "totalAccounts": 1
 }
