@@ -24,22 +24,6 @@ interface MultiAccountConfig {
   accounts: TwitterAccount[];
 }
 
-interface Tweet {
-  id: string;
-  author: string;
-  content: string;
-  engagement: {
-    likes: number;
-    retweets: number;
-    comments: number;
-    total: number;
-  };
-  timestamp: string;
-  url: string;
-  isLiked: boolean;
-  isRetweeted: boolean;
-  username?: string;
-}
 
 export async function POST(request: NextRequest) {
   try {

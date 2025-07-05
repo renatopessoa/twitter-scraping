@@ -10,7 +10,13 @@
     "test": "node test-simple.js",
     "test:complete": "node test-complete.js",
     "test:multi": "node test-multi-account.js",
+    "test:auto": "node test-varredura-automatica.js",
     "setup:cookies": "echo 'Configure twitter-cookies-multi.json seguindo o MULTI-CONTA-SETUP.md'",
+    "detect:auto": "node twitter-session-detector.js",
+    "detect:visual": "node twitter-session-detector.js --visible",
+    "detect:scan": "node twitter-auto-scanner.js",
+    "extract:cookies": "node cookie-extractor.js",
+    "validate:sessions": "node twitter-session-detector.js --validate",
     "clean": "rm -rf .next && rm -rf node_modules/.cache",
     "check": "npm run lint && npm run build"
   },

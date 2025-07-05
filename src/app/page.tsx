@@ -31,6 +31,17 @@ export default function Home() {
   const [customRetweets, setCustomRetweets] = useState<{ [key: string]: number }>({});
   const [showCustomInputs, setShowCustomInputs] = useState<{ [key: string]: boolean }>({});
   const [accountsInfo, setAccountsInfo] = useState<{ total: number; available: string[] }>({ total: 0, available: [] });
+  const [sessionDetector, setSessionDetector] = useState<{
+    isDetecting: boolean;
+    showDetector: boolean;
+    lastDetection: string | null;
+    detectionResults: { name: string; username: string; metrics: { followers: number; following: number; verified: boolean } }[];
+  }>({
+    isDetecting: false,
+    showDetector: false,
+    lastDetection: null,
+    detectionResults: []
+  });
 
   const clearResults = () => {
     setTweets([]);
@@ -240,6 +251,96 @@ export default function Home() {
     });
   };
 
+  const handleDetectSessions = async () => {
+    setSessionDetector(prev => ({ ...prev, isDetecting: true }));
+    setStatus("🔍 Detectando sessões ativas do Twitter...");
+
+    try {
+      const response = await fetch("/api/session-detector", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "detect-sessions",
+          options: {
+            headless: true,
+            timeout: 15000
+          }
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setStatus(data.message);
+        setSessionDetector(prev => ({
+          ...prev,
+          isDetecting: false,
+          lastDetection: new Date().toISOString(),
+          detectionResults: data.sessions || []
+        }));
+
+        // Atualizar informações das contas
+        if (data.totalDetected > 0) {
+          setAccountsInfo({
+            total: data.totalDetected,
+            available: data.sessions.map((s: { name: string; username: string }) => s.name)
+          });
+        }
+      } else {
+        setStatus(`Erro na detecção: ${data.error}`);
+        setSessionDetector(prev => ({ ...prev, isDetecting: false }));
+      }
+    } catch (error) {
+      setStatus(`Erro na detecção: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      setSessionDetector(prev => ({ ...prev, isDetecting: false }));
+    }
+  };
+
+  const handleValidateSessions = async () => {
+    setSessionDetector(prev => ({ ...prev, isDetecting: true }));
+    setStatus("🔍 Validando sessões existentes...");
+
+    try {
+      const response = await fetch("/api/session-detector", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "validate-sessions"
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setStatus(data.message);
+        setSessionDetector(prev => ({
+          ...prev,
+          isDetecting: false,
+          lastDetection: new Date().toISOString(),
+          detectionResults: data.sessions || []
+        }));
+
+        // Atualizar informações das contas
+        if (data.totalDetected > 0) {
+          setAccountsInfo({
+            total: data.totalDetected,
+            available: data.sessions.map((s: { name: string; username: string }) => s.name)
+          });
+        }
+      } else {
+        setStatus(`Erro na validação: ${data.error}`);
+        setSessionDetector(prev => ({ ...prev, isDetecting: false }));
+      }
+    } catch (error) {
+      setStatus(`Erro na validação: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+      setSessionDetector(prev => ({ ...prev, isDetecting: false }));
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <div className="container mx-auto px-4 py-16">
@@ -324,6 +425,74 @@ export default function Home() {
                 }`}>
                 {status}
               </p>
+            </div>
+
+            {/* Session Detector */}
+            <div className="mt-4 p-4 bg-purple-900/20 border border-purple-500/30 rounded-lg">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-medium text-purple-400">🔍 Detecção Automática de Sessões</h3>
+                <button
+                  onClick={() => setSessionDetector(prev => ({ ...prev, showDetector: !prev.showDetector }))}
+                  className="text-purple-400 hover:text-purple-300 text-sm transition-colors"
+                >
+                  {sessionDetector.showDetector ? "Ocultar" : "Mostrar"}
+                </button>
+              </div>
+
+              {sessionDetector.showDetector && (
+                <div className="space-y-3">
+                  <div className="text-sm text-purple-300">
+                    <p>🤖 Detecta automaticamente sessões ativas do Twitter</p>
+                    <p>⚡ Extrai cookies válidos sem intervenção manual</p>
+                    <p>🔄 Configura múltiplas contas automaticamente</p>
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleDetectSessions}
+                      disabled={sessionDetector.isDetecting}
+                      className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                    >
+                      {sessionDetector.isDetecting ? "Detectando..." : "🔍 Detectar Sessões"}
+                    </button>
+
+                    <button
+                      onClick={handleValidateSessions}
+                      disabled={sessionDetector.isDetecting}
+                      className="bg-gray-600 hover:bg-gray-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors text-sm"
+                    >
+                      {sessionDetector.isDetecting ? "Validando..." : "✅ Validar Existentes"}
+                    </button>
+                  </div>
+
+                  {sessionDetector.lastDetection && (
+                    <div className="text-xs text-gray-400">
+                      Última detecção: {formatDate(sessionDetector.lastDetection)}
+                    </div>
+                  )}
+
+                  {sessionDetector.detectionResults.length > 0 && (
+                    <div className="mt-3 p-3 bg-gray-700 rounded-lg">
+                      <h4 className="text-sm font-medium text-green-400 mb-2">
+                        🎉 Sessões Detectadas ({sessionDetector.detectionResults.length})
+                      </h4>
+                      <div className="space-y-2">
+                        {sessionDetector.detectionResults.map((session, index) => (
+                          <div key={index} className="flex items-center justify-between text-sm">
+                            <div className="text-gray-300">
+                              <span className="font-medium">{session.name}</span>
+                              <span className="text-gray-400 ml-2">(@{session.username})</span>
+                            </div>
+                            <div className="text-gray-400 text-xs">
+                              👥 {session.metrics.followers} • 🔄 {session.metrics.following}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Accounts Info Display */}
