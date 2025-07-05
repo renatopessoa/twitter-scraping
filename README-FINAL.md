@@ -7,17 +7,20 @@ Aplicação Next.js 15 que automatiza ações no Twitter/X sem usar a API oficia
 ## 🚀 Funcionalidades
 
 ### ✅ **Busca de Tweets**
+
 - Busca por qualquer termo ou hashtag
 - Retorna os 10 tweets com mais engajamento
 - Ordena por likes + retweets + comentários
 
 ### ✅ **Interações Automáticas**
+
 - **Curtir tweets** individualmente
 - **Retweetar tweets** individualmente
 - Feedback visual em tempo real
 - Loading states nos botões
 
 ### ✅ **Interface**
+
 - Design moderno com Tailwind CSS
 - Tema escuro
 - Responsivo
@@ -51,6 +54,7 @@ npx playwright install
 ## ⚙️ Configuração
 
 ### 1. **Cookies do Twitter**
+
 ```bash
 # Copiar exemplo
 cp twitter-cookies.example.json twitter-cookies.json
@@ -60,6 +64,7 @@ cp twitter-cookies.example.json twitter-cookies.json
 ```
 
 ### 2. **Estrutura do Cookie**
+
 ```json
 [
   {
@@ -76,16 +81,19 @@ cp twitter-cookies.example.json twitter-cookies.json
 ## 🚀 Uso
 
 ### 1. **Iniciar Aplicação**
+
 ```bash
 npm run dev
 ```
 
 ### 2. **Abrir no Navegador**
+
 ```
 http://localhost:3000
 ```
 
 ### 3. **Usar Interface**
+
 1. Digite um termo de busca
 2. Clique em "Buscar Tweets"
 3. Aguarde os resultados
@@ -105,11 +113,13 @@ Termo: "JavaScript"
 ## 🔧 Testes
 
 ### Teste Automatizado
+
 ```bash
 node test-correcao.js
 ```
 
 ### Teste Manual
+
 1. Acesse `http://localhost:3000`
 2. Busque "JavaScript"
 3. Clique em "Curtir" em qualquer tweet
@@ -118,11 +128,13 @@ node test-correcao.js
 ## 🐛 Problemas Conhecidos
 
 ### ✅ **Resolvidos**
+
 - ~~Erro "strict mode violation"~~ ✅ **CORRIGIDO**
 - ~~Timeout na busca~~ ✅ **CORRIGIDO**
 - ~~Seletor de tweets incorreto~~ ✅ **CORRIGIDO**
 
 ### ⚠️ **Limitações**
+
 - Requer cookies válidos do Twitter
 - Funciona apenas com contas autenticadas
 - Rate limiting do Twitter pode aplicar
@@ -156,16 +168,19 @@ twitter-scraping/
 ## 🎯 Casos de Uso
 
 ### Marketing Digital
+
 - Engajamento automático em hashtags
 - Monitoramento de tendências
 - Análise de competidores
 
 ### Pesquisa
+
 - Coleta de dados de tweets
 - Análise de sentimentos
 - Monitoramento de eventos
 
 ### Automação Pessoal
+
 - Curtir tweets relevantes
 - Retweetar conteúdo específico
 - Acompanhar tópicos de interesse
@@ -173,6 +188,7 @@ twitter-scraping/
 ## 📈 Métricas
 
 O sistema coleta e exibe:
+
 - **Likes**: Número de curtidas
 - **Retweets**: Número de retweets
 - **Comentários**: Número de respostas
@@ -181,18 +197,21 @@ O sistema coleta e exibe:
 ## 🔧 Troubleshooting
 
 ### Erro: "Cookies inválidos"
+
 ```bash
 # Atualizar cookies
 # Veja COOKIE-SETUP.md
 ```
 
 ### Erro: "Tweet não encontrado"
+
 ```bash
 # Tweet pode ter sido deletado
 # Tente com outros tweets
 ```
 
 ### Erro: "Timeout"
+
 ```bash
 # Verificar conexão
 # Aguardar e tentar novamente
@@ -227,6 +246,6 @@ Este projeto é para fins educacionais e de pesquisa. Use de forma responsável 
 ✅ Todas as funcionalidades implementadas  
 ✅ Todos os bugs corrigidos  
 ✅ Testes passando  
-✅ Documentação completa  
+✅ Documentação completa
 
 **Pronto para uso!**

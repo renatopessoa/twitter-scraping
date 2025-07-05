@@ -9,6 +9,7 @@ O erro "strict mode violation: locator('[data-testid="tweet"]') resolved to 6 el
 O erro ocorria porque o Playwright estava encontrando múltiplos tweets na página e não conseguia determinar qual era o correto para executar a ação.
 
 ### Causa Raiz
+
 - O seletor `[data-testid="tweet"]` encontrava todos os tweets na página
 - O método `.first()` não garantia que era o tweet correto
 - A navegação para URL direta nem sempre carregava apenas o tweet específico
@@ -16,9 +17,14 @@ O erro ocorria porque o Playwright estava encontrando múltiplos tweets na pági
 ## ✅ Solução Implementada
 
 ### 1. **Estratégia de Localização Múltipla**
+
 ```typescript
 // Estratégia 1: Página individual do tweet
-const directTweetExists = await page.locator('[data-testid="tweet"]').first().isVisible().catch(() => false);
+const directTweetExists = await page
+  .locator('[data-testid="tweet"]')
+  .first()
+  .isVisible()
+  .catch(() => false);
 
 if (directTweetExists) {
   targetTweetSelector = '[data-testid="tweet"]'; // Primeiro tweet na página individual
@@ -26,7 +32,9 @@ if (directTweetExists) {
 }
 
 // Estratégia 2: Busca pelo ID do tweet
-await page.goto('https://x.com/search?q=' + encodeURIComponent(tweetId) + '&src=typed_query');
+await page.goto(
+  "https://x.com/search?q=" + encodeURIComponent(tweetId) + "&src=typed_query"
+);
 targetTweetSelector = `[data-testid="tweet"]:has([href*="/status/${tweetId}"])`;
 
 // Estratégia 3: Timeline principal com scroll
@@ -34,6 +42,7 @@ targetTweetSelector = `[data-testid="tweet"]:has([href*="/status/${tweetId}"])`;
 ```
 
 ### 2. **Seletor Contextual Inteligente**
+
 ```typescript
 // Na página individual: usa o primeiro tweet
 targetTweetSelector = '[data-testid="tweet"]';
@@ -42,15 +51,20 @@ targetTweetSelector = '[data-testid="tweet"]';
 targetTweetSelector = `[data-testid="tweet"]:has([href*="/status/${tweetId}"])`;
 
 // Executa ação no tweet específico
-const likeButton = page.locator(`${targetTweetSelector} [data-testid="like"]`).first();
+const likeButton = page
+  .locator(`${targetTweetSelector} [data-testid="like"]`)
+  .first();
 ```
 
 ### 3. **Tratamento de Erros Específicos**
+
 ```typescript
 // Captura e trata especificamente o erro de strict mode
-if (error instanceof Error && error.message.includes('strict mode violation')) {
+if (error instanceof Error && error.message.includes("strict mode violation")) {
   return NextResponse.json(
-    { error: `Erro: Múltiplos elementos encontrados. Tente novamente ou escolha outro tweet.` },
+    {
+      error: `Erro: Múltiplos elementos encontrados. Tente novamente ou escolha outro tweet.`,
+    },
     { status: 400 }
   );
 }
@@ -59,6 +73,7 @@ if (error instanceof Error && error.message.includes('strict mode violation')) {
 ## 🧪 Teste de Validação
 
 ### Resultado do Teste Automatizado:
+
 ```
 🧪 Testando correção do erro strict mode...
 1. Buscando tweets...
@@ -77,6 +92,7 @@ if (error instanceof Error && error.message.includes('strict mode violation')) {
 ## 🔍 Como Funciona Agora
 
 ### Fluxo de Ação de Like/Retweet:
+
 1. **Navegação Direta**: Tenta acessar a URL do tweet individual
 2. **Verificação Inteligente**: Detecta se está na página individual ou em lista
 3. **Seletor Apropriado**: Usa o seletor correto para cada contexto
@@ -87,12 +103,14 @@ if (error instanceof Error && error.message.includes('strict mode violation')) {
 ## 📋 Arquivos Modificados
 
 ### `/src/app/api/twitter-action/route.ts`
+
 - ✅ **Corrigida** lógica de localização de tweets
 - ✅ **Implementadas** múltiplas estratégias de busca
 - ✅ **Melhorado** tratamento de erros específicos
 - ✅ **Adicionados** logs detalhados para debug
 
 ### `/test-correcao.js`
+
 - ✅ **Criado** script de teste automatizado
 - ✅ **Validação** completa do funcionamento
 
@@ -115,6 +133,7 @@ if (error instanceof Error && error.message.includes('strict mode violation')) {
 - **Interface do usuário**: ✅ Funcional
 
 ### Como Usar:
+
 1. Execute `npm run dev`
 2. Acesse `http://localhost:3003`
 3. Busque por qualquer termo

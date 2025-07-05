@@ -25,7 +25,7 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
-  const [loadingActions, setLoadingActions] = useState<{[key: string]: boolean}>({});
+  const [loadingActions, setLoadingActions] = useState<{ [key: string]: boolean }>({});
 
   const clearResults = () => {
     setTweets([]);
@@ -35,7 +35,7 @@ export default function Home() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!query.trim()) {
       setStatus("Erro: Por favor, insira um termo de busca");
       return;
@@ -73,7 +73,7 @@ export default function Home() {
   const handleTweetAction = async (action: 'like' | 'retweet', tweetId: string, tweetIndex: number) => {
     const actionKey = `${action}-${tweetIndex}`;
     setLoadingActions(prev => ({ ...prev, [actionKey]: true }));
-    
+
     try {
       const response = await fetch("/api/twitter-action", {
         method: "POST",
@@ -96,13 +96,13 @@ export default function Home() {
             newTweets[tweetIndex].isRetweeted = !newTweets[tweetIndex].isRetweeted;
             newTweets[tweetIndex].engagement.retweets += newTweets[tweetIndex].isRetweeted ? 1 : -1;
           }
-          newTweets[tweetIndex].engagement.total = 
-            newTweets[tweetIndex].engagement.likes + 
-            newTweets[tweetIndex].engagement.retweets + 
+          newTweets[tweetIndex].engagement.total =
+            newTweets[tweetIndex].engagement.likes +
+            newTweets[tweetIndex].engagement.retweets +
             newTweets[tweetIndex].engagement.comments;
           return newTweets;
         });
-        
+
         setStatus(data.message);
       } else {
         setStatus(`Erro: ${data.error}`);
@@ -148,8 +148,8 @@ export default function Home() {
           <div className="bg-gray-800 rounded-lg shadow-xl p-8 border border-gray-700 mb-8">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div>
-                <label 
-                  htmlFor="query" 
+                <label
+                  htmlFor="query"
                   className="block text-sm font-medium text-gray-300 mb-2"
                 >
                   Termo de Busca
@@ -187,13 +187,12 @@ export default function Home() {
             {/* Status Display */}
             <div className="mt-6 p-4 bg-gray-700 rounded-lg border border-gray-600">
               <h3 className="text-sm font-medium text-gray-300 mb-2">Status:</h3>
-              <p className={`text-sm font-mono ${
-                status.startsWith("Erro") 
-                  ? "text-red-400" 
+              <p className={`text-sm font-mono ${status.startsWith("Erro")
+                  ? "text-red-400"
                   : status.includes("sucesso") || status.includes("concluída")
-                  ? "text-green-400" 
-                  : "text-yellow-400"
-              }`}>
+                    ? "text-green-400"
+                    : "text-yellow-400"
+                }`}>
                 {status}
               </p>
             </div>
@@ -269,19 +268,18 @@ export default function Home() {
                       <button
                         onClick={() => handleTweetAction('like', tweet.id, index)}
                         disabled={loadingActions[`like-${index}`]}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${
-                          tweet.isLiked 
-                            ? "bg-red-600 hover:bg-red-700 text-white" 
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${tweet.isLiked
+                            ? "bg-red-600 hover:bg-red-700 text-white"
                             : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                        }`}
+                          }`}
                       >
                         <span>{tweet.isLiked ? "💖" : "🤍"}</span>
                         <span>
-                          {loadingActions[`like-${index}`] 
-                            ? "..." 
-                            : tweet.isLiked 
-                            ? "Curtido" 
-                            : "Curtir"
+                          {loadingActions[`like-${index}`]
+                            ? "..."
+                            : tweet.isLiked
+                              ? "Curtido"
+                              : "Curtir"
                           }
                         </span>
                       </button>
@@ -289,19 +287,18 @@ export default function Home() {
                       <button
                         onClick={() => handleTweetAction('retweet', tweet.id, index)}
                         disabled={loadingActions[`retweet-${index}`]}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${
-                          tweet.isRetweeted 
-                            ? "bg-green-600 hover:bg-green-700 text-white" 
+                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${tweet.isRetweeted
+                            ? "bg-green-600 hover:bg-green-700 text-white"
                             : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                        }`}
+                          }`}
                       >
                         <span>🔄</span>
                         <span>
-                          {loadingActions[`retweet-${index}`] 
-                            ? "..." 
-                            : tweet.isRetweeted 
-                            ? "Retweetado" 
-                            : "Retweet"
+                          {loadingActions[`retweet-${index}`]
+                            ? "..."
+                            : tweet.isRetweeted
+                              ? "Retweetado"
+                              : "Retweet"
                           }
                         </span>
                       </button>

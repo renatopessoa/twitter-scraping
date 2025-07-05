@@ -62,6 +62,7 @@ Para que a aplicação funcione, você precisa configurar os cookies de autentic
 5. Crie o arquivo `twitter-cookies.json` na raiz do projeto
 
 Exemplo de `twitter-cookies.json`:
+
 ```json
 [
   {
@@ -134,18 +135,21 @@ twitter-cookies.json
 ## 🔧 Arquitetura
 
 ### Frontend (`src/app/page.tsx`)
+
 - Interface React com estado gerenciado via hooks
 - Componentes responsivos com Tailwind CSS
 - Gerenciamento de loading states individual
 - Feedback visual para todas as ações
 
 ### Backend (`src/app/api/twitter-action/route.ts`)
+
 - API Route para automação com Playwright
 - Busca e ordenação de tweets por engajamento
 - Execução de ações (like/retweet) em tweets específicos
 - Tratamento robusto de erros e timeouts
 
 ### Scraping Strategy
+
 - Múltiplos seletores para máxima compatibilidade
 - Fallbacks para diferentes layouts do X.com
 - Extração inteligente de métricas numéricas
@@ -154,18 +158,21 @@ twitter-cookies.json
 ## 🚨 Limitações e Considerações
 
 ### Limitações Técnicas
+
 - Depende da estrutura HTML do X.com (pode quebrar com mudanças)
 - Requer cookies válidos e não expirados
 - Limitado pelas proteções anti-bot do X.com
 - Performance dependente da velocidade da conexão
 
 ### Limitações de Uso
+
 - Não deve ser usado para spam ou atividades maliciosas
 - Respeite os termos de uso do X.com
 - Use com moderação para evitar bloqueios
 - Mantenha cookies seguros e privados
 
 ### Considerações Éticas
+
 - Use apenas para contas próprias
 - Respeite a privacidade dos usuários
 - Não automatize ações excessivas
@@ -174,12 +181,14 @@ twitter-cookies.json
 ## 🛡️ Segurança
 
 ### Proteção de Dados
+
 - Cookies nunca são versionados (gitignore)
 - Execução em navegador headless isolado
 - Limpeza automática de recursos do navegador
 - Validação de entrada para prevenir ataques
 
 ### Boas Práticas
+
 - Mantenha cookies atualizados
 - Use HTTPS apenas
 - Monitore logs para detectar problemas
@@ -188,12 +197,14 @@ twitter-cookies.json
 ## 📊 Monitoramento
 
 ### Logs de Debug
+
 - Navegação de URLs no console
 - Erros de scraping detalhados
 - Status de autenticação
 - Métricas de performance
 
 ### Métricas de Sucesso
+
 - Taxa de sucesso de busca
 - Precisão na extração de dados
 - Sucesso nas ações de interação
@@ -202,12 +213,14 @@ twitter-cookies.json
 ## 🔄 Manutenção
 
 ### Atualizações Regulares
+
 - Verificar seletores CSS do X.com
 - Atualizar dependências do projeto
 - Renovar cookies quando necessário
 - Testar funcionalidades regularmente
 
 ### Troubleshooting
+
 - Verificar se cookies estão válidos
 - Confirmar se X.com não mudou layout
 - Checar conectividade de rede
@@ -216,6 +229,7 @@ twitter-cookies.json
 ## 📝 Changelog
 
 ### v1.2.0 (Atual)
+
 - ✅ Estados de loading individuais para botões
 - ✅ Melhor feedback visual com animações
 - ✅ Scraping mais robusto com múltiplos métodos
@@ -224,12 +238,14 @@ twitter-cookies.json
 - ✅ Interface refinada com indicadores visuais
 
 ### v1.1.0
+
 - ✅ Busca e ordenação por engajamento
 - ✅ Interação com tweets (like/retweet)
 - ✅ Interface com tema escuro
 - ✅ Autenticação por cookies
 
 ### v1.0.0
+
 - ✅ Estrutura inicial do projeto
 - ✅ Configuração do Playwright
 - ✅ Interface básica de busca
