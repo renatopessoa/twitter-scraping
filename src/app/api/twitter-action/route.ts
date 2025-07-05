@@ -318,7 +318,11 @@ async function searchTweets(query: string, sortBy: "recent" | "top" = "recent") 
   });
 
   try {
-    const context = await browser.newContext();
+    const context = await browser.newContext({
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36',
+      viewport: { width: 1920, height: 1080 }
+    });
+    
     await context.addCookies(searchAccount.cookies);
     
     const page = await context.newPage();
@@ -331,47 +335,238 @@ async function searchTweets(query: string, sortBy: "recent" | "top" = "recent") 
     console.log(`🔍 Buscando tweets: "${query}" (ordenação: ${sortBy})`);
     console.log(`🔗 URL: ${searchUrl}`);
 
-    await page.goto(searchUrl);
+    await page.goto(searchUrl, { waitUntil: 'networkidle', timeout: 30000 });
     await page.waitForTimeout(5000);
 
-    // Aguardar os tweets carregarem
-    await page.waitForSelector('article[data-testid="tweet"]', { timeout: 15000 });
+    // Aguardar os tweets carregarem - usar múltiplos seletores como fallback
+    console.log('🔍 Aguardando tweets carregarem...');
+    
+    const tweetSelectors = [
+      'article[data-testid="tweet"]',
+      'article[data-testid="tweetish"]',
+      'article[role="article"]',
+      '[data-testid="cellInnerDiv"]',
+      '.css-1dbjc4n[data-testid="tweet"]',
+      'div[data-testid="tweet"]'
+    ];
+
+    let tweetsFound = false;
+    let usedSelector = '';
+
+    for (const selector of tweetSelectors) {
+      try {
+        console.log(`🔍 Tentando seletor: ${selector}`);
+        await page.waitForSelector(selector, { timeout: 10000 });
+        
+        const count = await page.locator(selector).count();
+        if (count > 0) {
+          console.log(`✅ Encontrados ${count} elementos com seletor: ${selector}`);
+          tweetsFound = true;
+          usedSelector = selector;
+          break;
+        }
+      } catch (error) {
+        console.log(`❌ Seletor ${selector} não funcionou:`, (error as Error).message);
+        continue;
+      }
+    }
+
+    if (!tweetsFound) {
+      console.log('⚠️ Nenhum tweet encontrado com seletores padrão, tentando aguardar mais...');
+      await page.waitForTimeout(10000);
+      
+      // Tentar novamente com seletores mais genéricos
+      const fallbackSelectors = [
+        'article',
+        '[role="article"]',
+        'div[data-testid*="tweet"]',
+        '.tweet',
+        '[data-testid="primaryColumn"] > div > div'
+      ];
+
+      for (const selector of fallbackSelectors) {
+        try {
+          const count = await page.locator(selector).count();
+          if (count > 0) {
+            console.log(`✅ Fallback: encontrados ${count} elementos com: ${selector}`);
+            usedSelector = selector;
+            tweetsFound = true;
+            break;
+          }
+        } catch {
+          continue;
+        }
+      }
+    }
+
+    if (!tweetsFound) {
+      console.log('❌ Nenhum tweet encontrado após todas as tentativas');
+      
+      // Capturar screenshot para debug
+      await page.screenshot({ path: 'debug-no-tweets.png' });
+      
+      // Tentar verificar se está na página correta
+      const currentUrl = page.url();
+      console.log(`📍 URL atual: ${currentUrl}`);
+      
+      // Verificar se há mensagem de erro
+      const errorMessage = await page.locator('[data-testid="error-detail"]').textContent().catch(() => null);
+      if (errorMessage) {
+        console.log(`⚠️ Mensagem de erro na página: ${errorMessage}`);
+      }
+      
+      return NextResponse.json({
+        tweets: [],
+        query,
+        sortBy,
+        total: 0,
+        accounts_available: config.accounts.length,
+        search_account: searchAccount.name,
+        debug: {
+          url: currentUrl,
+          error: errorMessage,
+          note: 'Nenhum tweet encontrado - verifique se a busca é válida'
+        }
+      });
+    }
 
     // Extrair informações dos tweets
-    const tweets = await page.evaluate(() => {
-      const tweetElements = document.querySelectorAll('article[data-testid="tweet"]');
+    console.log(`🔍 Extraindo dados dos tweets com seletor: ${usedSelector}`);
+    
+    const tweets = await page.evaluate((selector) => {
+      const tweetElements = document.querySelectorAll(selector);
       const results = [];
+
+      console.log(`Processando ${tweetElements.length} elementos encontrados`);
 
       for (let i = 0; i < Math.min(tweetElements.length, 10); i++) {
         const tweet = tweetElements[i];
         
         try {
-          // Extrair ID do tweet
-          const tweetLink = tweet.querySelector('a[href*="/status/"]') as HTMLAnchorElement;
-          const tweetId = tweetLink ? tweetLink.href.split('/status/')[1].split('?')[0] : null;
+          // Extrair ID do tweet - múltiplas tentativas
+          let tweetId = null;
           
-          if (!tweetId) continue;
+          // Tentativa 1: Link direto
+          const tweetLink = tweet.querySelector('a[href*="/status/"]') as HTMLAnchorElement;
+          if (tweetLink) {
+            tweetId = tweetLink.href.split('/status/')[1].split('?')[0].split('/')[0];
+          }
+          
+          // Tentativa 2: Atributos do elemento
+          if (!tweetId) {
+            const tweetIdAttr = tweet.getAttribute('aria-labelledby');
+            if (tweetIdAttr) {
+              tweetId = tweetIdAttr.split('-').pop();
+            }
+          }
+          
+          // Tentativa 3: URL na árvore do DOM
+          if (!tweetId) {
+            const allLinks = tweet.querySelectorAll('a[href*="/status/"]');
+            for (const link of allLinks) {
+              const href = link.getAttribute('href');
+              if (href && href.includes('/status/')) {
+                tweetId = href.split('/status/')[1].split('?')[0].split('/')[0];
+                break;
+              }
+            }
+          }
+          
+          if (!tweetId || tweetId.length < 10) {
+            console.log(`Tweet ${i + 1}: ID não encontrado`);
+            continue;
+          }
 
-          // Extrair autor
-          const authorElement = tweet.querySelector('[data-testid="User-Name"]');
-          const author = authorElement ? authorElement.textContent?.trim() : "Autor desconhecido";
+          // Extrair autor - múltiplas tentativas
+          let author = "Autor desconhecido";
+          
+          const authorSelectors = [
+            '[data-testid="User-Name"]',
+            '[data-testid="User-Names"]',
+            '.css-1dbjc4n[data-testid="User-Name"]',
+            '[data-testid="tweet"] [dir="ltr"] span',
+            'div[data-testid="User-Name"] span',
+            'a[role="link"] span'
+          ];
 
-          // Extrair conteúdo
-          const contentElement = tweet.querySelector('[data-testid="tweetText"]');
-          const content = contentElement ? contentElement.textContent?.trim() : "Conteúdo não disponível";
+          for (const authorSelector of authorSelectors) {
+            const authorElement = tweet.querySelector(authorSelector);
+            if (authorElement && authorElement.textContent) {
+              author = authorElement.textContent.trim();
+              break;
+            }
+          }
+
+          // Extrair conteúdo - múltiplas tentativas
+          let content = "Conteúdo não disponível";
+          
+          const contentSelectors = [
+            '[data-testid="tweetText"]',
+            '[data-testid="tweet-text"]',
+            '.css-901oao[data-testid="tweetText"]',
+            'div[data-testid="tweetText"] span',
+            'div[lang] span',
+            '.tweet-text'
+          ];
+
+          for (const contentSelector of contentSelectors) {
+            const contentElement = tweet.querySelector(contentSelector);
+            if (contentElement && contentElement.textContent) {
+              content = contentElement.textContent.trim();
+              break;
+            }
+          }
 
           // Extrair métricas de engajamento
-          const likeButton = tweet.querySelector('[data-testid="like"]');
-          const retweetButton = tweet.querySelector('[data-testid="retweet"]');
-          const commentButton = tweet.querySelector('[data-testid="reply"]');
+          const extractNumber = (text: string | null | undefined): number => {
+            if (!text) return 0;
+            const cleaned = text.replace(/[^\d.KMB]/gi, '');
+            const number = parseFloat(cleaned);
+            if (isNaN(number)) return 0;
+            
+            if (cleaned.includes('K')) return Math.floor(number * 1000);
+            if (cleaned.includes('M')) return Math.floor(number * 1000000);
+            if (cleaned.includes('B')) return Math.floor(number * 1000000000);
+            return Math.floor(number);
+          };
 
-          const likes = parseInt(likeButton?.textContent?.trim() || '0') || 0;
-          const retweets = parseInt(retweetButton?.textContent?.trim() || '0') || 0;
-          const comments = parseInt(commentButton?.textContent?.trim() || '0') || 0;
+          const metricSelectors = {
+            like: ['[data-testid="like"]', '[data-testid="unlike"]', 'button[data-testid*="like"]'],
+            retweet: ['[data-testid="retweet"]', '[data-testid="unretweet"]', 'button[data-testid*="retweet"]'],
+            reply: ['[data-testid="reply"]', 'button[data-testid*="reply"]']
+          };
 
-          // Verificar se já foi curtido/retweetado
-          const isLiked = likeButton?.getAttribute('data-testid') === 'unlike';
-          const isRetweeted = retweetButton?.getAttribute('data-testid') === 'unretweet';
+          let likes = 0, retweets = 0, comments = 0;
+          let isLiked = false, isRetweeted = false;
+
+          // Extrair likes
+          for (const selector of metricSelectors.like) {
+            const element = tweet.querySelector(selector);
+            if (element) {
+              likes = extractNumber(element.textContent);
+              isLiked = element.getAttribute('data-testid') === 'unlike';
+              break;
+            }
+          }
+
+          // Extrair retweets
+          for (const selector of metricSelectors.retweet) {
+            const element = tweet.querySelector(selector);
+            if (element) {
+              retweets = extractNumber(element.textContent);
+              isRetweeted = element.getAttribute('data-testid') === 'unretweet';
+              break;
+            }
+          }
+
+          // Extrair comments
+          for (const selector of metricSelectors.reply) {
+            const element = tweet.querySelector(selector);
+            if (element) {
+              comments = extractNumber(element.textContent);
+              break;
+            }
+          }
 
           results.push({
             id: tweetId,
@@ -389,20 +584,22 @@ async function searchTweets(query: string, sortBy: "recent" | "top" = "recent") 
             isRetweeted,
             username: author?.split('@')[1]?.split('·')[0] || author || "unknown"
           });
+          
+          console.log(`Tweet ${i + 1}: ${author} - ${content.substring(0, 50)}...`);
         } catch (error) {
-          console.error('Erro ao processar tweet:', error);
+          console.error(`Erro ao processar tweet ${i + 1}:`, error);
         }
       }
 
       return results;
-    });
+    }, usedSelector);
 
     // Ordenar tweets se necessário
     if (sortBy === "top") {
       tweets.sort((a, b) => b.engagement.total - a.engagement.total);
     }
 
-    console.log(`✅ Encontrados ${tweets.length} tweets`);
+    console.log(`✅ Encontrados ${tweets.length} tweets válidos`);
 
     return NextResponse.json({
       tweets,
@@ -410,7 +607,11 @@ async function searchTweets(query: string, sortBy: "recent" | "top" = "recent") 
       sortBy,
       total: tweets.length,
       accounts_available: config.accounts.length,
-      search_account: searchAccount.name
+      search_account: searchAccount.name,
+      debug: {
+        selector_used: usedSelector,
+        total_found: tweets.length
+      }
     });
 
   } catch (error) {

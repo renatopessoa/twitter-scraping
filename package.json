@@ -11,6 +11,7 @@
     "test:complete": "node test-complete.js",
     "test:multi": "node test-multi-account.js",
     "test:auto": "node test-varredura-automatica.js",
+    "test:timeout": "node test-correcao-timeout.js",
     "setup:cookies": "echo 'Configure twitter-cookies-multi.json seguindo o MULTI-CONTA-SETUP.md'",
     "detect:auto": "node twitter-session-detector.js",
     "detect:visual": "node twitter-session-detector.js --visible",

@@ -198,8 +198,34 @@ npm run test:auto
 
 **O sistema agora oferece a melhor experiência possível para configuração multi-conta do Twitter!** 🎉
 
+## 🔧 Correções Recentes Implementadas
+
+### ⏱️ **Correção de Timeout na Busca** (v3.1.0)
+
+✅ **Problema Resolvido:** `page.waitForSelector: Timeout 15000ms exceeded`
+
+**Melhorias Implementadas:**
+
+- **Múltiplos seletores** com fallback automático
+- **Timeout aumentado** de 15s para 30s
+- **User-Agent melhorado** para evitar detecção
+- **Estratégia de fallback** robusta
+- **Debug detalhado** para troubleshooting
+
+**Como Testar:**
+
+```bash
+# Teste específico da correção
+npm run test:timeout
+
+# Teste via interface web
+npm run dev # → http://localhost:3000
+```
+
+📖 **Documentação completa:** `CORRECAO-TIMEOUT.md`
+
 ---
 
 _Implementação concluída: Janeiro 2024_  
 _Status: ✅ FUNCIONANDO PERFEITAMENTE_  
-_Versão: 3.0.0 - Varredura Automática Completa_
+_Versão: 3.1.0 - Varredura Automática Completa com Correções_
