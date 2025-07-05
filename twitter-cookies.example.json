@@ -1,0 +1,29 @@
+[
+  {
+    "name": "auth_token",
+    "value": "SEU_AUTH_TOKEN_AQUI",
+    "domain": ".twitter.com",
+    "path": "/",
+    "secure": true,
+    "httpOnly": true,
+    "sameSite": "None"
+  },
+  {
+    "name": "ct0",
+    "value": "SEU_CT0_AQUI",
+    "domain": ".twitter.com",
+    "path": "/",
+    "secure": true,
+    "httpOnly": false,
+    "sameSite": "Lax"
+  },
+  {
+    "name": "twid",
+    "value": "SEU_TWID_AQUI",
+    "domain": ".twitter.com",
+    "path": "/",
+    "secure": true,
+    "httpOnly": false,
+    "sameSite": "Lax"
+  }
+]
