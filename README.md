@@ -37,7 +37,7 @@ Para que a automação funcione, você precisa configurar os cookies de autentic
 5. Copie os seguintes cookies importantes:
    - `auth_token`
    - `ct0`
-   - `twid`
+   - `twid` u%
 
 ### 2. Criar o Arquivo de Cookies
 

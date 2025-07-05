@@ -74,34 +74,69 @@ export async function POST(request: NextRequest) {
       // Adicionar cookies para autenticação
       await context.addCookies(cookies);
 
-      // Navegar para a página de busca do Twitter
-      const searchUrl = `https://twitter.com/search?q=${encodeURIComponent(query.trim())}&src=typed_query&f=live`;
+      // Navegar para a página de busca do Twitter/X
+      const searchUrl = `https://x.com/search?q=${encodeURIComponent(query.trim())}&src=typed_query&f=live`;
       console.log(`Navegando para: ${searchUrl}`);
       
-      await page.goto(searchUrl, { 
-        waitUntil: "networkidle", 
-        timeout: 30000 
-      });
+      try {
+        await page.goto(searchUrl, { 
+          waitUntil: "domcontentloaded", 
+          timeout: 20000 
+        });
+      } catch {
+        // Se falhar, tentar com estratégia mais simples
+        console.log("Tentando navegação mais simples...");
+        await page.goto(searchUrl, { 
+          timeout: 15000 
+        });
+      }
 
       // Aguardar um pouco para garantir que a página carregou
       await page.waitForTimeout(3000);
 
-      // Verificar se estamos logados (procurar por indicadores de usuário logado)
-      const isLoggedIn = await page.locator('[data-testid="SideNav_AccountSwitcher_Button"]').isVisible()
+      // Verificar se estamos na página de login
+      const isLoginPage = await page.locator('input[name="text"]').isVisible()
         .catch(() => false);
 
-      if (!isLoggedIn) {
-        // Tentar outros seletores para verificar se está logado
-        const isLoggedInAlt = await page.locator('[data-testid="primaryColumn"]').isVisible()
-          .catch(() => false);
-        
-        if (!isLoggedInAlt) {
-          await browser.close();
-          return NextResponse.json(
-            { error: "Não foi possível fazer login no Twitter. Verifique se os cookies estão válidos." },
-            { status: 400 }
-          );
+      if (isLoginPage) {
+        await browser.close();
+        return NextResponse.json(
+          { error: "Redirecionado para página de login. Os cookies podem estar expirados ou inválidos." },
+          { status: 400 }
+        );
+      }
+
+      // Verificar se estamos logados (múltiplas verificações com timeout menor)
+      let isLoggedIn = false;
+      const loginChecks = [
+        '[data-testid="SideNav_AccountSwitcher_Button"]',
+        '[data-testid="AppTabBar_Profile_Link"]',
+        '[data-testid="primaryColumn"]',
+        '[aria-label="Página inicial"]',
+        '[data-testid="tweet"]',
+        '[data-testid="cellInnerDiv"]',
+        '[role="main"]'
+      ];
+
+      for (const selector of loginChecks) {
+        try {
+          const element = await page.locator(selector).first();
+          if (await element.isVisible()) {
+            isLoggedIn = true;
+            console.log(`Login detectado através do seletor: ${selector}`);
+            break;
+          }
+        } catch {
+          // Continuar tentando
         }
+      }
+
+      if (!isLoggedIn) {
+        await browser.close();
+        return NextResponse.json(
+          { error: "Não foi possível fazer login no Twitter. Verifique se os cookies estão válidos e não expiraram." },
+          { status: 400 }
+        );
       }
 
       // Aguardar pelos tweets carregarem
