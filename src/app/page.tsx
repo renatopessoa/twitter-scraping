@@ -21,11 +21,15 @@ interface Tweet {
 
 export default function Home() {
   const [query, setQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"recent" | "top">("recent");
   const [status, setStatus] = useState("Pronto");
   const [isLoading, setIsLoading] = useState(false);
   const [tweets, setTweets] = useState<Tweet[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loadingActions, setLoadingActions] = useState<{ [key: string]: boolean }>({});
+  const [customLikes, setCustomLikes] = useState<{ [key: string]: number }>({});
+  const [customRetweets, setCustomRetweets] = useState<{ [key: string]: number }>({});
+  const [showCustomInputs, setShowCustomInputs] = useState<{ [key: string]: boolean }>({});
 
   const clearResults = () => {
     setTweets([]);
@@ -51,7 +55,7 @@ export default function Home() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ query: query.trim() }),
+        body: JSON.stringify({ query: query.trim(), sortBy }),
       });
 
       const data = await response.json();
@@ -74,13 +78,22 @@ export default function Home() {
     const actionKey = `${action}-${tweetIndex}`;
     setLoadingActions(prev => ({ ...prev, [actionKey]: true }));
 
+    // Obter quantidade personalizada se definida
+    const customAmount = action === 'like' 
+      ? customLikes[tweetId] || 1 
+      : customRetweets[tweetId] || 1;
+
     try {
       const response = await fetch("/api/twitter-action", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action, tweetId }),
+        body: JSON.stringify({ 
+          action, 
+          tweetId, 
+          amount: customAmount 
+        }),
       });
 
       const data = await response.json();
@@ -91,10 +104,10 @@ export default function Home() {
           const newTweets = [...prevTweets];
           if (action === 'like') {
             newTweets[tweetIndex].isLiked = !newTweets[tweetIndex].isLiked;
-            newTweets[tweetIndex].engagement.likes += newTweets[tweetIndex].isLiked ? 1 : -1;
+            newTweets[tweetIndex].engagement.likes += newTweets[tweetIndex].isLiked ? customAmount : -customAmount;
           } else if (action === 'retweet') {
             newTweets[tweetIndex].isRetweeted = !newTweets[tweetIndex].isRetweeted;
-            newTweets[tweetIndex].engagement.retweets += newTweets[tweetIndex].isRetweeted ? 1 : -1;
+            newTweets[tweetIndex].engagement.retweets += newTweets[tweetIndex].isRetweeted ? customAmount : -customAmount;
           }
           newTweets[tweetIndex].engagement.total =
             newTweets[tweetIndex].engagement.likes +
@@ -111,6 +124,94 @@ export default function Home() {
       setStatus(`Erro: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
     } finally {
       setLoadingActions(prev => ({ ...prev, [actionKey]: false }));
+    }
+  };
+
+  const handleBatchActions = async () => {
+    // Coletar todas as ações configuradas
+    const batchActions = [];
+    
+    for (const tweet of tweets) {
+      const likesAmount = customLikes[tweet.id];
+      const retweetsAmount = customRetweets[tweet.id];
+      
+      if (likesAmount && likesAmount > 0) {
+        batchActions.push({
+          tweetId: tweet.id,
+          action: 'like' as const,
+          amount: likesAmount
+        });
+      }
+      
+      if (retweetsAmount && retweetsAmount > 0) {
+        batchActions.push({
+          tweetId: tweet.id,
+          action: 'retweet' as const,
+          amount: retweetsAmount
+        });
+      }
+    }
+    
+    if (batchActions.length === 0) {
+      setStatus("Nenhuma ação configurada. Configure quantidades nos tweets antes de enviar.");
+      return;
+    }
+    
+    setLoadingActions(prev => ({ ...prev, 'batch': true }));
+    setStatus(`Executando ${batchActions.length} ações em lote...`);
+    
+    try {
+      const response = await fetch("/api/twitter-action", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ batchActions }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setStatus(`${data.message} - ${data.summary.success}/${data.summary.total} sucessos`);
+        
+        // Atualizar estado local dos tweets baseado nos resultados
+        setTweets(prevTweets => {
+          const newTweets = [...prevTweets];
+          
+          for (const result of data.results) {
+            if (result.success) {
+              const tweetIndex = newTweets.findIndex(t => t.id === result.tweetId);
+              if (tweetIndex !== -1) {
+                if (result.action === 'like') {
+                  newTweets[tweetIndex].isLiked = true;
+                  newTweets[tweetIndex].engagement.likes += result.amount;
+                } else if (result.action === 'retweet') {
+                  newTweets[tweetIndex].isRetweeted = true;
+                  newTweets[tweetIndex].engagement.retweets += result.amount;
+                }
+                newTweets[tweetIndex].engagement.total =
+                  newTweets[tweetIndex].engagement.likes +
+                  newTweets[tweetIndex].engagement.retweets +
+                  newTweets[tweetIndex].engagement.comments;
+              }
+            }
+          }
+          
+          return newTweets;
+        });
+        
+        // Limpar configurações após sucesso
+        setCustomLikes({});
+        setCustomRetweets({});
+        setShowCustomInputs({});
+        
+      } else {
+        setStatus(`Erro: ${data.error}`);
+      }
+    } catch (error) {
+      setStatus(`Erro: ${error instanceof Error ? error.message : "Erro desconhecido"}`);
+    } finally {
+      setLoadingActions(prev => ({ ...prev, 'batch': false }));
     }
   };
 
@@ -165,6 +266,25 @@ export default function Home() {
                 />
               </div>
 
+              <div>
+                <label
+                  htmlFor="sortBy"
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                >
+                  Ordenar por
+                </label>
+                <select
+                  id="sortBy"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as "recent" | "top")}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-white transition-colors"
+                  disabled={isLoading}
+                >
+                  <option value="recent">Tweets mais recentes</option>
+                  <option value="top">Tweets com mais engajamento</option>
+                </select>
+              </div>
+
               <button
                 type="submit"
                 disabled={isLoading}
@@ -206,18 +326,29 @@ export default function Home() {
                   <h2 className="text-xl font-semibold text-gray-200">
                     Resultados para: &quot;{searchQuery}&quot;
                   </h2>
-                  <button
-                    onClick={clearResults}
-                    className="text-sm text-gray-400 hover:text-gray-200 transition-colors"
-                  >
-                    Limpar resultados
-                  </button>
+                  <div className="flex space-x-3">
+                    <button
+                      onClick={handleBatchActions}
+                      disabled={loadingActions['batch']}
+                      className="bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors"
+                    >
+                      {loadingActions['batch'] ? "Enviando..." : "🚀 Enviar Todas as Ações"}
+                    </button>
+                    <button
+                      onClick={clearResults}
+                      className="text-sm text-gray-400 hover:text-gray-200 transition-colors"
+                    >
+                      Limpar resultados
+                    </button>
+                  </div>
                 </div>
                 <p className="text-gray-400">
-                  {tweets.length} tweets encontrados, ordenados por engajamento
+                  {tweets.length} tweets encontrados, ordenados por {sortBy === "recent" ? "data (mais recentes)" : "engajamento"}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Configure as quantidades nos tweets e clique em &quot;Enviar Todas as Ações&quot; para executar em lote.
                 </p>
               </div>
-
               {/* Tweets List */}
               {tweets.map((tweet, index) => (
                 <div key={tweet.id} className="bg-gray-800 rounded-lg p-6 border border-gray-700 hover:border-gray-600 transition-colors">
@@ -264,44 +395,88 @@ export default function Home() {
 
                   {/* Action Buttons */}
                   <div className="flex items-center justify-between pt-4 border-t border-gray-700">
-                    <div className="flex space-x-3">
-                      <button
-                        onClick={() => handleTweetAction('like', tweet.id, index)}
-                        disabled={loadingActions[`like-${index}`]}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${tweet.isLiked
-                            ? "bg-red-600 hover:bg-red-700 text-white"
-                            : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                          }`}
-                      >
-                        <span>{tweet.isLiked ? "💖" : "🤍"}</span>
-                        <span>
-                          {loadingActions[`like-${index}`]
-                            ? "..."
-                            : tweet.isLiked
-                              ? "Curtido"
-                              : "Curtir"
-                          }
-                        </span>
-                      </button>
+                    <div className="flex flex-col space-y-3">
+                      <div className="flex space-x-3">
+                        <button
+                          onClick={() => handleTweetAction('like', tweet.id, index)}
+                          disabled={loadingActions[`like-${index}`]}
+                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${tweet.isLiked
+                              ? "bg-red-600 hover:bg-red-700 text-white"
+                              : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                            }`}
+                        >
+                          <span>{tweet.isLiked ? "💖" : "🤍"}</span>
+                          <span>
+                            {loadingActions[`like-${index}`]
+                              ? "..."
+                              : tweet.isLiked
+                                ? "Curtido"
+                                : "Curtir"
+                            }
+                          </span>
+                        </button>
 
-                      <button
-                        onClick={() => handleTweetAction('retweet', tweet.id, index)}
-                        disabled={loadingActions[`retweet-${index}`]}
-                        className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${tweet.isRetweeted
-                            ? "bg-green-600 hover:bg-green-700 text-white"
-                            : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                          }`}
-                      >
-                        <span>🔄</span>
-                        <span>
-                          {loadingActions[`retweet-${index}`]
-                            ? "..."
-                            : tweet.isRetweeted
-                              ? "Retweetado"
-                              : "Retweet"
-                          }
-                        </span>
-                      </button>
+                        <button
+                          onClick={() => handleTweetAction('retweet', tweet.id, index)}
+                          disabled={loadingActions[`retweet-${index}`]}
+                          className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors disabled:opacity-50 ${tweet.isRetweeted
+                              ? "bg-green-600 hover:bg-green-700 text-white"
+                              : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                            }`}
+                        >
+                          <span>🔄</span>
+                          <span>
+                            {loadingActions[`retweet-${index}`]
+                              ? "..."
+                              : tweet.isRetweeted
+                                ? "Retweetado"
+                                : "Retweet"
+                            }
+                          </span>
+                        </button>
+
+                        <button
+                          onClick={() => setShowCustomInputs(prev => ({ ...prev, [tweet.id]: !prev[tweet.id] }))}
+                          className="flex items-center space-x-2 px-4 py-2 rounded-lg bg-gray-700 hover:bg-gray-600 text-gray-300 transition-colors"
+                        >
+                          <span>⚙️</span>
+                          <span>Config</span>
+                        </button>
+                      </div>
+
+                      {/* Custom Amount Inputs */}
+                      {showCustomInputs[tweet.id] && (
+                        <div className="flex space-x-3 p-3 bg-gray-700 rounded-lg">
+                          <div className="flex flex-col space-y-2">
+                            <label className="text-xs text-gray-300">Likes a adicionar:</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={customLikes[tweet.id] || 1}
+                              onChange={(e) => setCustomLikes(prev => ({ 
+                                ...prev, 
+                                [tweet.id]: Math.max(1, parseInt(e.target.value) || 1) 
+                              }))}
+                              className="w-20 px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                            />
+                          </div>
+                          <div className="flex flex-col space-y-2">
+                            <label className="text-xs text-gray-300">Retweets a adicionar:</label>
+                            <input
+                              type="number"
+                              min="1"
+                              max="100"
+                              value={customRetweets[tweet.id] || 1}
+                              onChange={(e) => setCustomRetweets(prev => ({ 
+                                ...prev, 
+                                [tweet.id]: Math.max(1, parseInt(e.target.value) || 1) 
+                              }))}
+                              className="w-20 px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-sm"
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {tweet.url && (
@@ -347,9 +522,11 @@ export default function Home() {
             </h2>
             <ul className="text-sm text-gray-300 space-y-2">
               <li>• Digite um termo de busca (palavra-chave, hashtag, etc.)</li>
-              <li>• O sistema buscará e ordenará os tweets por engajamento total</li>
-              <li>• Você pode curtir ou retweetar qualquer tweet da lista</li>
-              <li>• Os 10 tweets com mais engajamento serão exibidos</li>
+              <li>• Escolha se quer ver tweets mais recentes ou com mais engajamento</li>
+              <li>• Use o botão &quot;Config&quot; para definir quantos likes/retweets adicionar</li>
+              <li>• Clique em &quot;Enviar Todas as Ações&quot; para executar todas as configurações</li>
+              <li>• Ou clique individualmente em &quot;Curtir&quot; ou &quot;Retweet&quot;</li>
+              <li>• Os 10 melhores tweets serão exibidos conforme sua escolha</li>
               <li>• Certifique-se de que o arquivo <code className="bg-gray-700 px-1 rounded">twitter-cookies.json</code> está configurado</li>
             </ul>
           </div>

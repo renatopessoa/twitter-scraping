@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node test-simple.js",
+    "test:complete": "node test-complete.js",
+    "setup:cookies": "echo 'Configure twitter-cookies.json seguindo o README-FINAL-COMPLETE.md'",
+    "clean": "rm -rf .next && rm -rf node_modules/.cache",
+    "check": "npm run lint && npm run build"
   },
   "dependencies": {
     "next": "15.3.5",

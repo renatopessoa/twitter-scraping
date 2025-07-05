@@ -1,0 +1,120 @@
+{
+  "timestamp": "2025-07-05T17:22:49.785Z",
+  "total_tests": 6,
+  "passed_tests": 5,
+  "failed_tests": 1,
+  "success_rate": "83.3",
+  "results": {
+    "search": [
+      {
+        "query": "Next.js",
+        "sortBy": "recent",
+        "desc": "Busca: Next.js (mais recentes)",
+        "status": "success",
+        "tweets": [
+          {
+            "id": "1941484947107463288",
+            "author": "Bhuvan Bhattarai@bhuvan_365·4 h",
+            "content": "Just revived my old Spotify clone project! \n Fetches songs/playlists from storage\n Play/Pause/Next/Prev\n Volume control\n Clean library UI\nBuilt with  HTML, CSS, JS — and a lot of passion!\n#JavaScript #WebDev #MusicApp #CodeNewbie #SpotifyClone #100DaysOfCode",
+            "engagement": {
+              "likes": 0,
+              "retweets": 0,
+              "comments": 0,
+              "total": 0
+            },
+            "timestamp": "2025-07-05T13:10:57.000Z",
+            "url": "https://x.com/bhuvan_365/status/1941484947107463288",
+            "isLiked": false,
+            "isRetweeted": false,
+            "username": "bhuvan_365"
+          },
+          {
+            "id": "1941484908754739394",
+            "author": "Gabriel Moresco@moreesco·4 h",
+            "content": "How do you handle Next.js middleware’s,  server actions and others on Tauri?",
+            "engagement": {
+              "likes": 2,
+              "retweets": 0,
+              "comments": 2,
+              "total": 4
+            },
+            "timestamp": "2025-07-05T13:10:47.000Z",
+            "url": "https://x.com/moreesco/status/1941484908754739394",
+            "isLiked": false,
+            "isRetweeted": false,
+            "username": "moreesco"
+          }
+        ]
+      },
+      {
+        "query": "React",
+        "sortBy": "top",
+        "desc": "Busca: React (mais engajamento)",
+        "status": "success",
+        "tweets": [
+          {
+            "id": "1671540048997539840",
+            "author": "Nintendo of America@NintendoAmerica·21 de jun de 2023",
+            "content": "Microgame mayhem returns in #WarioWare: Move It!, coming to #NintendoSwitch on Nov. 3! Strike a pose and react with over 200 lightning-fast microgames, co-op play for 2 players, and party modes for up to 4 players!",
+            "engagement": {
+              "likes": 8899,
+              "retweets": 2344,
+              "comments": 191,
+              "total": 11434
+            },
+            "timestamp": "2023-06-21T15:26:18.000Z",
+            "url": "https://x.com/NintendoAmerica/status/1671540048997539840",
+            "isLiked": false,
+            "isRetweeted": false,
+            "username": "NintendoAmerica"
+          },
+          {
+            "id": "1891511661053255799",
+            "author": "shadcn@shadcn·17 de fev",
+            "content": "react-scan by @aidenybai goes in every project. Absolute game-changer.",
+            "engagement": {
+              "likes": 3393,
+              "retweets": 97,
+              "comments": 45,
+              "total": 3535
+            },
+            "timestamp": "2025-02-17T15:34:57.000Z",
+            "url": "https://x.com/shadcn/status/1891511661053255799",
+            "isLiked": false,
+            "isRetweeted": false,
+            "username": "shadcn"
+          }
+        ]
+      },
+      {
+        "query": "",
+        "sortBy": "recent",
+        "desc": "Busca vazia (deve falhar)",
+        "shouldFail": true,
+        "status": "success"
+      }
+    ],
+    "actions": [
+      {
+        "action": "like",
+        "amount": 1,
+        "status": "error"
+      },
+      {
+        "action": "retweet",
+        "amount": 1,
+        "status": "success"
+      }
+    ],
+    "batch": [
+      {
+        "status": "success",
+        "summary": {
+          "total": 2,
+          "success": 1,
+          "errors": 1
+        }
+      }
+    ]
+  }
+}

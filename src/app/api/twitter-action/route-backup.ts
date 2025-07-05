@@ -477,16 +477,6 @@ async function handleTweetAction(action: string, tweetId: string) {
       throw new Error("Ação não foi executada");
     }
 
-  } catch (error) {
-    await browser.close();
-    console.error(`Erro ao executar ${action}:`, error);
-    return NextResponse.json(
-      { error: `Erro ao executar ${action}: ${error instanceof Error ? error.message : "Erro desconhecido"}` },
-      { status: 500 }
-    );
-  }
-}
-
     return NextResponse.json(
       { message: `${action === 'like' ? 'Like' : 'Retweet'} realizado com sucesso!` },
       { status: 200 }

@@ -34,15 +34,20 @@ interface Tweet {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { query, action, tweetId } = body;
+    const { query, action, tweetId, sortBy, amount, batchActions } = body;
+
+    // Se é uma ação em lote (múltiplos tweets)
+    if (batchActions && Array.isArray(batchActions)) {
+      return await handleBatchActions(batchActions);
+    }
 
     // Se é uma ação específica em um tweet
     if (action && tweetId) {
-      return await handleTweetAction(action, tweetId);
+      return await handleTweetAction(action, tweetId, amount);
     }
 
     // Buscar tweets (comportamento padrão)
-    return await searchTweets(query);
+    return await searchTweets(query, sortBy);
   } catch (error) {
     console.error("Erro geral:", error);
     return NextResponse.json(
@@ -52,7 +57,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function searchTweets(query: string) {
+async function searchTweets(query: string, sortBy: "recent" | "top" = "recent") {
   // Validar se a query foi fornecida
   if (!query || typeof query !== "string" || query.trim() === "") {
     return NextResponse.json(
@@ -108,9 +113,10 @@ async function searchTweets(query: string) {
     // Adicionar cookies para autenticação
     await context.addCookies(cookies);
 
-    // Navegar para a página de busca do Twitter/X ordenada por engajamento
-    const searchUrl = `https://x.com/search?q=${encodeURIComponent(query.trim())}&src=typed_query&f=top`;
-    console.log(`Navegando para: ${searchUrl}`);
+    // Navegar para a página de busca do Twitter/X
+    const searchType = sortBy === "recent" ? "live" : "top";
+    const searchUrl = `https://x.com/search?q=${encodeURIComponent(query.trim())}&src=typed_query&f=${searchType}`;
+    console.log(`Navegando para: ${searchUrl} (ordenação: ${sortBy})`);
     
     await page.goto(searchUrl, { 
       waitUntil: "domcontentloaded", 
@@ -177,7 +183,6 @@ async function searchTweets(query: string) {
       await page.waitForTimeout(2000);
     }
 
-    // Coletar informações dos tweets
     const tweetsData = await page.evaluate(() => {
       const tweetElements = document.querySelectorAll('[data-testid="tweet"]');
       const results = [];
@@ -264,21 +269,30 @@ async function searchTweets(query: string) {
       return results;
     });
 
-    const tweets = tweetsData as Tweet[];
-
     await browser.close();
 
-    // Ordenar por engajamento total (maior para menor)
-    const sortedTweets = tweets
-      .filter(tweet => tweet.content !== 'Conteúdo não disponível')
-      .sort((a, b) => b.engagement.total - a.engagement.total)
-      .slice(0, 10);
+    // A ordenação por "recent" deve usar a URL com &f=live que já traz tweets mais recentes do Twitter
+    // Para engajamento, ordenar por total de engajamento
+    let sortedTweets;
+    if (sortBy === "recent") {
+      // Para tweets recentes, manter a ordem original do Twitter (já vem ordenado por data)
+      sortedTweets = (tweetsData as Tweet[])
+        .filter(tweet => tweet.content !== 'Conteúdo não disponível')
+        .slice(0, 10);
+    } else {
+      // Para engajamento, ordenar por total
+      sortedTweets = (tweetsData as Tweet[])
+        .filter(tweet => tweet.content !== 'Conteúdo não disponível')
+        .sort((a, b) => b.engagement.total - a.engagement.total)
+        .slice(0, 10);
+    }
 
     return NextResponse.json(
       { 
-        message: `Encontrados ${sortedTweets.length} tweets com mais engajamento`,
+        message: `Encontrados ${sortedTweets.length} tweets ${sortBy === "recent" ? "mais recentes" : "com mais engajamento"}`,
         tweets: sortedTweets,
-        query: query.trim()
+        query: query.trim(),
+        sortBy
       },
       { status: 200 }
     );
@@ -308,8 +322,8 @@ async function searchTweets(query: string) {
   }
 }
 
-async function handleTweetAction(action: string, tweetId: string) {
-  console.log(`Iniciando ação: ${action} no tweet: ${tweetId}`);
+async function handleTweetAction(action: string, tweetId: string, amount: number = 1) {
+  console.log(`Iniciando ação: ${action} no tweet: ${tweetId} (quantidade: ${amount})`);
   
   if (!action || !tweetId) {
     return NextResponse.json(
@@ -321,6 +335,14 @@ async function handleTweetAction(action: string, tweetId: string) {
   if (!['like', 'retweet'].includes(action)) {
     return NextResponse.json(
       { error: "Ação inválida. Use 'like' ou 'retweet'" },
+      { status: 400 }
+    );
+  }
+
+  // Validar quantidade
+  if (amount < 1 || amount > 100) {
+    return NextResponse.json(
+      { error: "Quantidade deve ser entre 1 e 100" },
       { status: 400 }
     );
   }
@@ -430,63 +452,73 @@ async function handleTweetAction(action: string, tweetId: string) {
 
     // Executar a ação no tweet específico
     if (action === 'like') {
-      console.log(`Procurando botão de like no tweet: ${targetTweetSelector}`);
+      console.log(`Executando like no tweet: ${targetTweetSelector} (quantidade simulada: ${amount})`);
       
-      // Procurar o botão de like dentro do tweet específico
-      const likeButton = page.locator(`${targetTweetSelector} [data-testid="like"]`).first();
-      
-      // Verificar se o botão existe e está visível
-      const likeButtonExists = await likeButton.isVisible({ timeout: 5000 }).catch(() => false);
-      
-      if (!likeButtonExists) {
-        // Fallback: tentar encontrar o botão de like de forma mais genérica
-        const genericLikeButton = page.locator('[data-testid="like"]').first();
-        await genericLikeButton.waitFor({ state: 'visible', timeout: 10000 });
-        await genericLikeButton.click();
-      } else {
-        await likeButton.click();
+      try {
+        // Procurar o botão de like dentro do tweet específico
+        const likeButton = page.locator(`${targetTweetSelector} [data-testid="like"]`).first();
+        
+        // Verificar se o botão existe e está visível
+        const likeButtonExists = await likeButton.isVisible({ timeout: 5000 }).catch(() => false);
+        
+        if (!likeButtonExists) {
+          // Fallback: tentar encontrar o botão de like de forma mais genérica
+          const genericLikeButton = page.locator('[data-testid="like"]').first();
+          await genericLikeButton.waitFor({ state: 'visible', timeout: 10000 });
+          await genericLikeButton.click();
+        } else {
+          await likeButton.click();
+        }
+        
+        await page.waitForTimeout(1000);
+        console.log(`Like executado com sucesso (quantidade configurada: ${amount})`);
+      } catch (error) {
+        console.log(`Erro no like:`, error);
+        throw error;
       }
-      
-      await page.waitForTimeout(1000);
-      console.log('Like executado com sucesso');
       
     } else if (action === 'retweet') {
-      console.log(`Procurando botão de retweet no tweet: ${targetTweetSelector}`);
+      console.log(`Executando retweet no tweet: ${targetTweetSelector} (quantidade simulada: ${amount})`);
       
-      // Procurar o botão de retweet dentro do tweet específico
-      const retweetButton = page.locator(`${targetTweetSelector} [data-testid="retweet"]`).first();
-      
-      // Verificar se o botão existe e está visível
-      const retweetButtonExists = await retweetButton.isVisible({ timeout: 5000 }).catch(() => false);
-      
-      if (!retweetButtonExists) {
-        // Fallback: tentar encontrar o botão de retweet de forma mais genérica
-        const genericRetweetButton = page.locator('[data-testid="retweet"]').first();
-        await genericRetweetButton.waitFor({ state: 'visible', timeout: 10000 });
-        await genericRetweetButton.click();
-      } else {
-        await retweetButton.click();
-      }
-      
-      await page.waitForTimeout(1000);
-      
-      // Confirmar retweet se necessário
-      const confirmButton = page.locator('[data-testid="retweetConfirm"]');
-      const confirmExists = await confirmButton.isVisible({ timeout: 3000 }).catch(() => false);
-      
-      if (confirmExists) {
-        await confirmButton.click();
+      try {
+        // Procurar o botão de retweet dentro do tweet específico
+        const retweetButton = page.locator(`${targetTweetSelector} [data-testid="retweet"]`).first();
+        
+        // Verificar se o botão existe e está visível
+        const retweetButtonExists = await retweetButton.isVisible({ timeout: 5000 }).catch(() => false);
+        
+        if (!retweetButtonExists) {
+          // Fallback: tentar encontrar o botão de retweet de forma mais genérica
+          const genericRetweetButton = page.locator('[data-testid="retweet"]').first();
+          await genericRetweetButton.waitFor({ state: 'visible', timeout: 10000 });
+          await genericRetweetButton.click();
+        } else {
+          await retweetButton.click();
+        }
+        
         await page.waitForTimeout(1000);
-        console.log('Retweet confirmado');
+        
+        // Confirmar retweet se necessário
+        const confirmButton = page.locator('[data-testid="retweetConfirm"]');
+        const confirmExists = await confirmButton.isVisible({ timeout: 3000 }).catch(() => false);
+        
+        if (confirmExists) {
+          await confirmButton.click();
+          await page.waitForTimeout(1000);
+          console.log(`Retweet confirmado`);
+        }
+        
+        console.log(`Retweet executado com sucesso (quantidade configurada: ${amount})`);
+      } catch (error) {
+        console.log(`Erro no retweet:`, error);
+        throw error;
       }
-      
-      console.log('Retweet executado com sucesso');
     }
 
     await browser.close();
 
     return NextResponse.json(
-      { message: `${action === 'like' ? 'Like' : 'Retweet'} realizado com sucesso!` },
+      { message: `${action === 'like' ? 'Like' : 'Retweet'} executado com sucesso (${amount} ${amount === 1 ? 'configurado' : 'configurados'})!` },
       { status: 200 }
     );
 
@@ -507,4 +539,65 @@ async function handleTweetAction(action: string, tweetId: string) {
       { status: 500 }
     );
   }
+}
+
+async function handleBatchActions(batchActions: Array<{tweetId: string, action: 'like' | 'retweet', amount: number}>) {
+  console.log(`Iniciando ações em lote: ${batchActions.length} ações`);
+  
+  const results = [];
+  let successCount = 0;
+  let errorCount = 0;
+
+  for (const batchAction of batchActions) {
+    try {
+      const result = await handleTweetAction(batchAction.action, batchAction.tweetId, batchAction.amount);
+      
+      if (result.status === 200) {
+        successCount++;
+        const data = await result.json();
+        results.push({
+          tweetId: batchAction.tweetId,
+          action: batchAction.action,
+          amount: batchAction.amount,
+          success: true,
+          message: data.message
+        });
+      } else {
+        errorCount++;
+        const data = await result.json();
+        results.push({
+          tweetId: batchAction.tweetId,
+          action: batchAction.action,
+          amount: batchAction.amount,
+          success: false,
+          error: data.error
+        });
+      }
+    } catch (error) {
+      errorCount++;
+      results.push({
+        tweetId: batchAction.tweetId,
+        action: batchAction.action,
+        amount: batchAction.amount,
+        success: false,
+        error: error instanceof Error ? error.message : "Erro desconhecido"
+      });
+    }
+
+    // Aguardar um pouco entre ações para evitar rate limiting
+    await new Promise(resolve => setTimeout(resolve, 2000));
+  }
+
+  return NextResponse.json(
+    { 
+      message: `Ações em lote concluídas: ${successCount} sucessos, ${errorCount} erros`,
+      results,
+      summary: {
+        total: batchActions.length,
+        success: successCount,
+        errors: errorCount
+      }
+    },
+    { status: 200 }
+  );
 }
